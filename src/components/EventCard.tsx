@@ -26,6 +26,9 @@ const EventCard = ({ event }: EventCardProps) => {
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
             <MapPin className="w-3 h-3 shrink-0" />
             <span className="truncate">{event.venue.name}</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+              {event.venue.type}
+            </span>
             <span className="text-muted-foreground/50">•</span>
             <span className="font-mono-nums text-xs shrink-0">{event.venue.distance}</span>
           </p>
