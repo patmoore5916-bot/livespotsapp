@@ -45,7 +45,7 @@ const Auth = () => {
           <div className="w-14 h-14 rounded-card bg-primary/10 flex items-center justify-center mx-auto">
             <Music className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">SoundMap</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Livespot</h1>
           <p className="text-sm text-muted-foreground">
             {isLogin ? "Welcome back" : "Find live music in the Triangle"}
           </p>
