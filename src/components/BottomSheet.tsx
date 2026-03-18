@@ -111,7 +111,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       {/* Event list grouped by date */}
       <div
         ref={containerRef}
-        className="overflow-y-auto px-5 pb-20 space-y-4"
+        className="overflow-y-auto px-5 pb-28 space-y-4"
         style={{ height: `calc(100% - 140px)` }}
       >
         {filteredEvents.length === 0 ? (
