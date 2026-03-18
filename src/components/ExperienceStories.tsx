@@ -10,6 +10,9 @@ interface ExperienceStoriesProps {
 }
 
 const ExperienceStories = ({ posts, onStoryTap, onPostTap }: ExperienceStoriesProps) => {
+  const { data: venues = [] } = useVenues();
+
+const ExperienceStories = ({ posts, onStoryTap, onPostTap }: ExperienceStoriesProps) => {
   // Group posts by venue
   const venueGroups = posts.reduce<Record<string, ExperiencePost[]>>((acc, post) => {
     if (!acc[post.venue_id]) acc[post.venue_id] = [];
