@@ -7,6 +7,7 @@ import ExperienceViewer from "@/components/ExperienceViewer";
 import PostExperience from "@/components/PostExperience";
 import { events } from "@/data/mockEvents";
 import { useExperiencePosts } from "@/hooks/useExperiences";
+import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { Search, Locate } from "lucide-react";
 import { motion } from "framer-motion";
@@ -20,6 +21,7 @@ const Index = () => {
   const [showPost, setShowPost] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { location, cityName, requestLocation } = useUserLocation();
 
   const { data: experiencePosts = [] } = useExperiencePosts();
 
@@ -47,12 +49,13 @@ const Index = () => {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search venues, artists..."
+              placeholder="Search cities, venues, artists..."
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full py-3"
             />
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
+            onClick={requestLocation}
             className="w-11 h-11 rounded-inner bg-card/80 backdrop-blur-md shadow-card flex items-center justify-center"
           >
             <Locate className="w-4 h-4 text-foreground" />
@@ -70,7 +73,11 @@ const Index = () => {
       </div>
 
       {/* Map */}
-      <MapView onVenueSelect={handleVenueSelect} selectedVenueId={selectedVenueId} />
+      <MapView
+        onVenueSelect={handleVenueSelect}
+        selectedVenueId={selectedVenueId}
+        userLocation={location}
+      />
 
       {/* Bottom Sheet */}
       <BottomSheet
@@ -80,6 +87,7 @@ const Index = () => {
         }
         snapPoint={sheetSnap}
         onSnapChange={setSheetSnap}
+        cityName={cityName}
       />
 
       {/* Full-screen experience viewer */}

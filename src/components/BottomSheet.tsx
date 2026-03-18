@@ -7,13 +7,14 @@ import { genres } from "@/data/mockEvents";
 
 interface BottomSheetProps {
   events: Event[];
-  snapPoint: number; // 0 = collapsed, 1 = mid, 2 = full
+  snapPoint: number;
   onSnapChange: (snap: number) => void;
+  cityName?: string;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
 
-const BottomSheet = ({ events, snapPoint, onSnapChange }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby" }: BottomSheetProps) => {
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [liveOnly, setLiveOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +59,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange }: BottomSheetProps) => {
       <div className="px-5 pb-3">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Live in the Triangle
+            Live near {cityName}
           </h2>
           <span className="font-mono-nums text-xs text-muted-foreground">
             {filteredEvents.length} shows

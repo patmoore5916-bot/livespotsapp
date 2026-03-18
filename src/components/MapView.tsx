@@ -6,6 +6,7 @@ import { venues, events, statusColors, type EventStatus } from "@/data/mockEvent
 interface MapViewProps {
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 // Get the "hottest" status for a venue (live > today > this-week)
@@ -36,18 +37,44 @@ const createPinIcon = (status: EventStatus | null, isSelected: boolean) => {
   });
 };
 
-const MapView = ({ onVenueSelect, selectedVenueId }: MapViewProps) => {
+const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
+  const userMarkerRef = useRef<L.Marker | null>(null);
+
+  // Center map on user location when available
+  useEffect(() => {
+    if (mapRef.current && userLocation) {
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 12, { animate: true });
+
+      // Add/update user location marker
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      } else {
+        const userIcon = L.divIcon({
+          className: "custom-pin",
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+          html: `<div style="width:12px;height:12px;border-radius:50%;background:hsl(210,100%,60%);border:3px solid white;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>`,
+        });
+        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(mapRef.current);
+      }
+    }
+  }, [userLocation]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Center on the Triangle (Durham area)
+    // Default center: US center, zoom out
+    const defaultCenter: [number, number] = userLocation
+      ? [userLocation.lat, userLocation.lng]
+      : [39.5, -98.35];
+    const defaultZoom = userLocation ? 12 : 4;
+
     const map = L.map(containerRef.current, {
-      center: [35.9, -78.95],
-      zoom: 11,
+      center: defaultCenter,
+      zoom: defaultZoom,
       zoomControl: false,
       attributionControl: false,
     });
