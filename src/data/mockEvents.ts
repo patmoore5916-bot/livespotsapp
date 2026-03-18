@@ -1,6 +1,9 @@
+export type VenueType = "venue" | "bar" | "brewery" | "club";
+
 export type Venue = {
   id: string;
   name: string;
+  type: VenueType;
   neighborhood: string;
   city: string;
   lat: number;
