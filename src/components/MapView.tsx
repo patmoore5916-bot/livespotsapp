@@ -17,6 +17,9 @@ const venuePositions: Record<string, { x: number; y: number }> = {
   v6: { x: 28, y: 42 },
   v7: { x: 80, y: 62 },
   v8: { x: 12, y: 70 },
+  v9: { x: 73, y: 52 },
+  v10: { x: 45, y: 32 },
+  v11: { x: 82, y: 58 },
 };
 
 const MapView = ({ onVenueSelect, selectedVenueId }: MapViewProps) => {

@@ -50,4 +50,4 @@ export const events: Event[] = [
   { id: "e11", venue: venues[10], artist: "Open Mic Night", genre: "Folk Rock", doorsAt: "7:00 PM", startTime: "7:30 PM", isLiveNow: true, ticketUrl: "#" },
 ];
 
-export const genres = ["All", "Indie Rock", "Psych Funk", "Hardcore", "Indie Pop", "Tuareg Blues", "Alt Country", "Folk Rock", "Indie Folk"];
+export const genres = ["All", "Indie Rock", "Psych Funk", "Hardcore", "Indie Pop", "Tuareg Blues", "Alt Country", "Folk Rock", "Indie Folk", "Electronic"];
