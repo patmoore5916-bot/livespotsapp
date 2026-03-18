@@ -2,8 +2,9 @@ import { useState } from "react";
 import MapView from "@/components/MapView";
 import BottomSheet from "@/components/BottomSheet";
 import { events } from "@/data/mockEvents";
-import { Search, Locate } from "lucide-react";
+import { Search, Locate, User, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
