@@ -1,1 +1,4 @@
 project_id = "sjtbnvoacjibnuumotti"
+
+[functions.sync-events]
+verify_jwt = false
