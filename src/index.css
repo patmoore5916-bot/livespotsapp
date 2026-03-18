@@ -67,3 +67,44 @@
     font-family: 'IBM Plex Mono', monospace;
   }
 }
+
+/* Leaflet overrides */
+.custom-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.venue-tooltip {
+  background: hsl(240 4% 10% / 0.9) !important;
+  border: 1px solid hsl(240 4% 26%) !important;
+  color: hsl(0 0% 98%) !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+
+.venue-tooltip::before {
+  border-top-color: hsl(240 4% 10% / 0.9) !important;
+}
+
+.leaflet-control-zoom a {
+  background: hsl(240 4% 10% / 0.9) !important;
+  color: hsl(0 0% 98%) !important;
+  border-color: hsl(240 4% 26%) !important;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-control-zoom a:hover {
+  background: hsl(240 4% 16%) !important;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
