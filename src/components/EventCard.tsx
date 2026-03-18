@@ -15,12 +15,15 @@ const EventCard = ({ event }: EventCardProps) => {
     >
       <div className="flex justify-between items-start gap-3">
         <div className="space-y-1.5 min-w-0 flex-1">
-          {event.isLiveNow && (
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-primary uppercase tracking-widest font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Live Now
-            </span>
-          )}
+          <span
+            className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest font-medium"
+            style={{ color: statusColors[event.status].bg }}
+          >
+            {event.status === "live" && (
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusColors[event.status].bg }} />
+            )}
+            {statusColors[event.status].label}
+          </span>
           <h3 className="text-lg font-bold text-foreground leading-tight tracking-tight truncate">
             {event.artist}
           </h3>

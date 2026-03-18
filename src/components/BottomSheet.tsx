@@ -19,7 +19,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange }: BottomSheetProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredEvents = events.filter((e) => {
-    if (liveOnly && !e.isLiveNow) return false;
+    if (liveOnly && e.status !== "live") return false;
     if (selectedGenre !== "All" && e.genre !== selectedGenre) return false;
     return true;
   });
