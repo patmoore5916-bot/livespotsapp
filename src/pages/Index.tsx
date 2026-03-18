@@ -32,40 +32,6 @@ const Index = () => {
         >
           <Locate className="w-4 h-4 text-foreground" />
         </motion.button>
-        <div className="relative">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowMenu(!showMenu)}
-            className="w-11 h-11 rounded-inner bg-primary/90 backdrop-blur-md shadow-card flex items-center justify-center"
-          >
-            <User className="w-4 h-4 text-primary-foreground" />
-          </motion.button>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute right-0 top-13 bg-card rounded-inner shadow-card border border-border p-3 min-w-[180px] space-y-2"
-            >
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 truncate">
-                {user?.email}
-              </p>
-              <div className="flex gap-1.5 flex-wrap">
-                {roles.map((r) => (
-                  <span key={r} className="text-[10px] font-mono uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-sm">
-                    {r}
-                  </span>
-                ))}
-              </div>
-              <button
-                onClick={signOut}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full min-h-[36px]"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                Sign Out
-              </button>
-            </motion.div>
-          )}
-        </div>
       </div>
 
       {/* Map */}
