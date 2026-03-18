@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
