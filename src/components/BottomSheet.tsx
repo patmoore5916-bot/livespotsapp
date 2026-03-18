@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
@@ -111,7 +112,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       {/* Event list grouped by date */}
       <div
         ref={containerRef}
-        className="overflow-y-auto px-5 pb-20 space-y-4"
+        className="overflow-y-auto px-5 pb-28 space-y-4"
         style={{ height: `calc(100% - 140px)` }}
       >
         {filteredEvents.length === 0 ? (
@@ -136,6 +137,19 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
           ))
         )}
       </div>
+
+      {/* Collapse button */}
+      {snapPoint > 0 && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          onClick={() => onSnapChange(0)}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-11 h-11 rounded-full bg-card border border-border shadow-card flex items-center justify-center"
+        >
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+        </motion.button>
+      )}
     </motion.div>
   );
 };
