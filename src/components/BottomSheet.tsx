@@ -15,12 +15,14 @@ interface BottomSheetProps {
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
 
-const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [liveOnly, setLiveOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
+
+  const q = searchQuery.toLowerCase().trim();
 
   const filteredEvents = events.filter((e) => {
     if (liveOnly && e.status !== "live") return false;
@@ -28,6 +30,13 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       return userGenres.some((g) => e.genre.toLowerCase() === g.toLowerCase());
     }
     if (selectedGenre !== "All" && selectedGenre !== "For You" && e.genre !== selectedGenre) return false;
+    if (q) {
+      return (
+        e.genre.toLowerCase().includes(q) ||
+        e.artist.toLowerCase().includes(q) ||
+        e.venue.name.toLowerCase().includes(q)
+      );
+    }
     return true;
   });
 
