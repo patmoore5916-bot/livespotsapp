@@ -6,9 +6,10 @@ interface FilterChipsProps {
   onSelect: (genre: string) => void;
   liveOnly: boolean;
   onToggleLive: () => void;
+  showForYou?: boolean;
 }
 
-const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive }: FilterChipsProps) => {
+const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive, showForYou = false }: FilterChipsProps) => {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none px-1">
       <motion.button
@@ -25,6 +26,20 @@ const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive }: Fil
           Live Now
         </span>
       </motion.button>
+
+      {showForYou && (
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => onSelect("For You")}
+          className={`shrink-0 px-3 py-2 rounded-inner text-xs font-mono uppercase tracking-widest min-h-[44px] transition-colors duration-150 ${
+            selected === "For You"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground"
+          }`}
+        >
+          ✦ For You
+        </motion.button>
+      )}
 
       {genres.map((genre) => (
         <motion.button

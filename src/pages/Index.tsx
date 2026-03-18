@@ -96,6 +96,7 @@ const Index = () => {
         snapPoint={sheetSnap}
         onSnapChange={setSheetSnap}
         cityName={cityName}
+        userGenres={prefs?.genres}
       />
 
       {/* Full-screen experience viewer */}

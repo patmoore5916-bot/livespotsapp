@@ -29,7 +29,7 @@ const Auth = () => {
     } else if (isLogin) {
       navigate("/");
     } else {
-      setError("Check your email to confirm your account.");
+      setError("Check your email to confirm your account. After confirming, you'll be able to sign in.");
     }
   };
 

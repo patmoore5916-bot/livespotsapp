@@ -76,6 +76,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
           onSelect={setSelectedGenre}
           liveOnly={liveOnly}
           onToggleLive={() => setLiveOnly(!liveOnly)}
+          showForYou={showForYou}
         />
       </div>
 
