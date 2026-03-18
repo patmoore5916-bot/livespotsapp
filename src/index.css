@@ -69,6 +69,14 @@
 }
 
 /* Leaflet overrides */
+.leaflet-container {
+  background: hsl(var(--background)) !important;
+}
+
+.leaflet-tile {
+  filter: grayscale(1) brightness(0.72) contrast(1.05);
+}
+
 .custom-pin {
   background: transparent !important;
   border: none !important;
