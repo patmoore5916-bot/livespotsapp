@@ -9,6 +9,7 @@ import Auth from "./pages/Auth.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Admin from "./pages/Admin.tsx";
+import Install from "./pages/Install.tsx";
 
 const queryClient = new QueryClient();
 
