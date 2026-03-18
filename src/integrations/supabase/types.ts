@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      experience_posts: {
+        Row: {
+          caption: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          thumbnail_url: string | null
+          user_id: string
+          venue_id: string
+          video_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          user_id: string
+          venue_id: string
+          video_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          thumbnail_url?: string | null
+          user_id?: string
+          venue_id?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
