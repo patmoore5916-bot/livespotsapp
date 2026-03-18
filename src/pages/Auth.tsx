@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music, Mail, Lock, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,9 +28,20 @@ const Auth = () => {
     if (error) {
       setError(error.message);
     } else if (isLogin) {
-      navigate("/");
+      // Check if user has preferences; if not, send to onboarding
+      const { data: session } = await supabase.auth.getSession();
+      if (session?.session?.user) {
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("id")
+          .eq("user_id", session.session.user.id)
+          .maybeSingle();
+        navigate(prefs ? "/" : "/onboarding");
+      } else {
+        navigate("/");
+      }
     } else {
-      setError("Check your email to confirm your account.");
+      setError("Check your email to confirm your account. After confirming, you'll be able to sign in.");
     }
   };
 

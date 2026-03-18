@@ -9,6 +9,8 @@ import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
 import { useExperiencePosts } from "@/hooks/useExperiences";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import HeaderAuth from "@/components/HeaderAuth";
 import { Search, Locate } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +24,7 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location, cityName, requestLocation } = useUserLocation();
+  const { data: prefs } = useUserPreferences();
 
   const { data: venues = [] } = useVenues();
   const { data: events = [] } = useEvents();
@@ -62,6 +65,7 @@ const Index = () => {
           >
             <Locate className="w-4 h-4 text-foreground" />
           </motion.button>
+          <HeaderAuth />
         </div>
 
         {/* Experience Stories row */}
@@ -92,6 +96,7 @@ const Index = () => {
         snapPoint={sheetSnap}
         onSnapChange={setSheetSnap}
         cityName={cityName}
+        userGenres={prefs?.genres}
       />
 
       {/* Full-screen experience viewer */}
