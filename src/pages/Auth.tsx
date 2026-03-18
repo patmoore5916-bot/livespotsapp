@@ -28,7 +28,18 @@ const Auth = () => {
     if (error) {
       setError(error.message);
     } else if (isLogin) {
-      navigate("/");
+      // Check if user has preferences; if not, send to onboarding
+      const { data: session } = await supabase.auth.getSession();
+      if (session?.session?.user) {
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("id")
+          .eq("user_id", session.session.user.id)
+          .maybeSingle();
+        navigate(prefs ? "/" : "/onboarding");
+      } else {
+        navigate("/");
+      }
     } else {
       setError("Check your email to confirm your account. After confirming, you'll be able to sign in.");
     }
