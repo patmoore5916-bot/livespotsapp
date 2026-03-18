@@ -14,7 +14,7 @@ interface BottomSheetProps {
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
 
-const BottomSheet = ({ events, snapPoint, onSnapChange }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby" }: BottomSheetProps) => {
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [liveOnly, setLiveOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
