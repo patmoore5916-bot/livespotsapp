@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, isTomorrow, isThisWeek, addMonths } from "date-fns";
+import { ScraperService } from "@/services/ScraperService";
+import { format, isToday, addMonths } from "date-fns";
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "this-week";
@@ -20,7 +20,7 @@ export interface Event {
   venue: Venue;
   artist: string;
   genre: string;
-  date: string; // ISO date string
+  date: string;
   doorsAt: string;
   startTime: string;
   status: EventStatus;
@@ -33,72 +33,108 @@ export const statusColors = {
   "this-week": { bg: "#6366F1", glow: "rgba(99,102,241,0.35)", label: "This Week" },
 } as const;
 
-/** Derive a display-friendly status from a date string */
-function deriveStatus(dateStr: string, dbStatus: EventStatus): EventStatus {
-  if (dbStatus === "live") return "live";
+function deriveStatus(dateStr: string): EventStatus {
   const d = new Date(dateStr + "T00:00:00");
   if (isToday(d)) return "today";
-  return "this-week"; // future dates
+  return "this-week";
+}
+
+function venueTypeFromString(s?: string): VenueType {
+  if (!s) return "venue";
+  const lower = s.toLowerCase();
+  if (lower.includes("bar")) return "bar";
+  if (lower.includes("brew")) return "brewery";
+  if (lower.includes("club")) return "club";
+  return "venue";
+}
+
+function makeId(str: string, fallback: string): string {
+  const slug = str.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 40);
+  return slug || fallback;
 }
 
 export const useVenues = () => {
   return useQuery({
-    queryKey: ["venues"],
+    queryKey: ["manus-venues"],
     queryFn: async (): Promise<Venue[]> => {
-      const { data, error } = await supabase.from("venues").select("*");
-      if (error) throw error;
-      return (data ?? []).map((v) => ({
-        id: v.id,
-        name: v.name,
-        type: v.type as VenueType,
-        neighborhood: v.neighborhood,
-        city: v.city,
-        lat: v.lat,
-        lng: v.lng,
-      }));
+      const raw = await ScraperService.fetchVenues();
+      return raw
+        .filter((v) => v.lat && v.lng)
+        .map((v, i) => ({
+          id: makeId(v.name, String(i)),
+          name: v.name,
+          type: venueTypeFromString(v.venue_type),
+          neighborhood: v.address ?? "",
+          city: v.city ?? "",
+          lat: v.lat!,
+          lng: v.lng!,
+        }));
     },
+    staleTime: 1000 * 60 * 15,
   });
 };
 
 export const useEvents = () => {
   return useQuery({
-    queryKey: ["events"],
+    queryKey: ["manus-events"],
     queryFn: async (): Promise<Event[]> => {
+      const [rawVenues, rawShows] = await Promise.all([
+        ScraperService.fetchVenues(),
+        ScraperService.fetchShows(),
+      ]);
+
       const today = new Date().toISOString().split("T")[0];
       const twoMonthsOut = format(addMonths(new Date(), 2), "yyyy-MM-dd");
 
-      const { data, error } = await supabase
-        .from("events")
-        .select("*, venues(*)")
-        .gte("date", today)
-        .lte("date", twoMonthsOut)
-        .order("date", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map((e: any) => ({
-        id: e.id,
-        venue: {
-          id: e.venues.id,
-          name: e.venues.name,
-          type: e.venues.type as VenueType,
-          neighborhood: e.venues.neighborhood,
-          city: e.venues.city,
-          lat: e.venues.lat,
-          lng: e.venues.lng,
-        },
-        artist: e.artist,
-        genre: e.genre,
-        date: e.date,
-        doorsAt: e.doors_at,
-        startTime: e.start_time,
-        status: deriveStatus(e.date, e.status as EventStatus),
-        ticketUrl: e.ticket_url,
-      }));
+      const venueMap = new Map(
+        rawVenues.map((v, i) => [
+          v.name.toLowerCase(),
+          {
+            id: makeId(v.name, String(i)),
+            name: v.name,
+            type: venueTypeFromString(v.venue_type),
+            neighborhood: v.address ?? "",
+            city: v.city ?? "",
+            lat: v.lat ?? 0,
+            lng: v.lng ?? 0,
+          } as Venue,
+        ])
+      );
+
+      return rawShows
+        .filter((e) => e.date >= today && e.date <= twoMonthsOut)
+        .map((e, i) => {
+          const venueKey = (e.venue_name ?? "").toLowerCase();
+          const matchedVenue: Venue = venueMap.get(venueKey) ?? {
+            id: makeId(e.venue_name ?? "unknown", `venue-${i}`),
+            name: e.venue_name ?? "Unknown Venue",
+            type: "venue" as VenueType,
+            neighborhood: "",
+            city: "",
+            lat: 0,
+            lng: 0,
+          };
+          return {
+            id: `${makeId(e.artist ?? "event", "evt")}-${i}`,
+            venue: matchedVenue,
+            artist: e.artist ?? "Unknown Artist",
+            genre: e.genre ?? "",
+            date: e.date,
+            doorsAt: e.start_time ?? "",
+            startTime: e.start_time ?? "",
+            status: deriveStatus(e.date),
+            ticketUrl: e.ticket_url,
+          };
+        });
     },
+    staleTime: 1000 * 60 * 15,
   });
 };
 
 export const useGenres = () => {
   const { data: events } = useEvents();
-  const genres = events ? ["All", ...new Set(events.map((e) => e.genre).filter(Boolean))] : ["All"];
+  const genres = events
+    ? ["All", ...new Set(events.map((e) => e.genre).filter(Boolean))]
+    : ["All"];
   return genres;
 };
