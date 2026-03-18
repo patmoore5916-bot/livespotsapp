@@ -49,8 +49,14 @@ function venueTypeFromString(s?: string): VenueType {
 }
 
 function makeId(str: string, fallback: string): string {
-  const slug = str.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 40);
+  const slug = (str ?? "").toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 40);
   return slug || fallback;
+}
+
+// Parse lat/lng safely — API returns them as strings
+function toNum(v: any): number {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
 }
 
 export const useVenues = () => {
@@ -59,15 +65,15 @@ export const useVenues = () => {
     queryFn: async (): Promise<Venue[]> => {
       const raw = await ScraperService.fetchVenues();
       return raw
-        .filter((v) => v.lat && v.lng)
+        .filter((v) => v.lat != null && v.lng != null && toNum(v.lat) !== 0 && toNum(v.lng) !== 0)
         .map((v, i) => ({
           id: makeId(v.name, String(i)),
           name: v.name,
           type: venueTypeFromString(v.venue_type),
           neighborhood: v.address ?? "",
           city: v.city ?? "",
-          lat: v.lat!,
-          lng: v.lng!,
+          lat: toNum(v.lat),
+          lng: toNum(v.lng),
         }));
     },
     staleTime: 1000 * 60 * 15,
@@ -95,8 +101,8 @@ export const useEvents = () => {
             type: venueTypeFromString(v.venue_type),
             neighborhood: v.address ?? "",
             city: v.city ?? "",
-            lat: v.lat ?? 0,
-            lng: v.lng ?? 0,
+            lat: toNum(v.lat),
+            lng: toNum(v.lng),
           } as Venue,
         ])
       );
