@@ -33,7 +33,7 @@ const EventCard = ({ event }: EventCardProps) => {
               {event.venue.type}
             </span>
             <span className="text-muted-foreground/50">•</span>
-            <span className="font-mono-nums text-xs shrink-0">{event.venue.distance}</span>
+            <span className="font-mono-nums text-xs shrink-0">{event.venue.city}</span>
           </p>
         </div>
 

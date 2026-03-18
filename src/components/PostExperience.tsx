@@ -14,6 +14,7 @@ interface PostExperienceProps {
 
 const PostExperience = ({ onClose, preselectedVenueId }: PostExperienceProps) => {
   const { user } = useAuth();
+  const { data: venues = [] } = useVenues();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);

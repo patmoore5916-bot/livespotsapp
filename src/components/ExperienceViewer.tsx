@@ -13,6 +13,7 @@ interface ExperienceViewerProps {
 const ExperienceViewer = ({ posts, initialIndex, onClose }: ExperienceViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [muted, setMuted] = useState(true);
+  const { data: venues = [] } = useVenues();
   const post = posts[currentIndex];
   const venue = venues.find(v => v.id === post?.venue_id);
 
