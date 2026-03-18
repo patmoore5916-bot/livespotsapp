@@ -91,6 +91,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_logs: {
+        Row: {
+          error_message: string | null
+          events_upserted: number
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          triggered_by: string | null
+          venues_upserted: number
+        }
+        Insert: {
+          error_message?: string | null
+          events_upserted?: number
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          venues_upserted?: number
+        }
+        Update: {
+          error_message?: string | null
+          events_upserted?: number
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          venues_upserted?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
