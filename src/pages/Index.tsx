@@ -103,6 +103,7 @@ const Index = () => {
         onSnapChange={setSheetSnap}
         cityName={cityName}
         userGenres={prefs?.genres}
+        searchQuery={searchQuery}
       />
 
       {/* Full-screen experience viewer */}
