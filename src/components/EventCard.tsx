@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { MapPin, Clock, ExternalLink } from "lucide-react";
 import type { Event } from "@/data/mockEvents";
+import { statusColors } from "@/data/mockEvents";
 
 interface EventCardProps {
   event: Event;
