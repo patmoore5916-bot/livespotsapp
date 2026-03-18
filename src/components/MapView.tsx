@@ -1,100 +1,166 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { statusColors, type Venue, type Event } from "@/hooks/useVenuesAndEvents";
+import { statusColors, type EventStatus, type Venue, type Event } from "@/hooks/useVenuesAndEvents";
 
 interface MapViewProps {
   venues: Venue[];
   events: Event[];
-  onVenueSelect: (id: string) => void;
+  onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
   userLocation?: { lat: number; lng: number } | null;
 }
 
-const DEFAULT_CENTER: [number, number] = [35.227, -80.843]; // Charlotte, NC
-const DEFAULT_ZOOM = 11;
+const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
+  const venueEvents = events.filter((e) => e.venue.id === venueId);
+  if (venueEvents.some((e) => e.status === "live")) return "live";
+  if (venueEvents.some((e) => e.status === "today")) return "today";
+  if (venueEvents.some((e) => e.status === "this-week")) return "this-week";
+  return null;
+};
 
-function createMarkerIcon(color: string, glow: string, selected: boolean) {
-  const size = selected ? 18 : 13;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size * 2}" height="${size * 2}" viewBox="0 0 ${size * 2} ${size * 2}">
-    <circle cx="${size}" cy="${size}" r="${size - 2}" fill="${color}" stroke="white" stroke-width="2"
-      style="filter: drop-shadow(0 0 ${selected ? 6 : 4}px ${glow})" />
-  </svg>`;
+const createPinIcon = (status: EventStatus | null, isSelected: boolean) => {
+  const colors = status ? statusColors[status] : { bg: "#52525b", glow: "transparent" };
+  const size = isSelected ? 20 : status === "live" ? 16 : 12;
+  const glowSize = size + 16;
+
   return L.divIcon({
-    html: svg,
-    className: "",
-    iconSize: [size * 2, size * 2],
-    iconAnchor: [size, size],
+    className: "custom-pin",
+    iconSize: [glowSize, glowSize],
+    iconAnchor: [glowSize / 2, glowSize / 2],
+    html: `
+      <div style="position:relative;width:${glowSize}px;height:${glowSize}px;display:flex;align-items:center;justify-content:center;">
+        ${status === "live" ? `<div style="position:absolute;width:${glowSize}px;height:${glowSize}px;border-radius:50%;background:${colors.glow};animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ""}
+        ${status ? `<div style="position:absolute;width:${size + 8}px;height:${size + 8}px;border-radius:50%;background:${colors.glow};filter:blur(4px);"></div>` : ""}
+        <div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};border:2px solid ${isSelected ? "#fff" : "rgba(255,255,255,0.3)"};box-shadow:0 0 ${status === "live" ? "12" : "6"}px ${colors.glow};position:relative;z-index:2;${isSelected ? "box-shadow:0 0 0 3px rgba(255,255,255,0.4),0 0 16px ${colors.glow};" : ""}"></div>
+      </div>
+    `,
   });
-}
+};
 
 const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<Record<string, L.Marker>>({});
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  // Init map
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-    const map = L.map(mapRef.current, {
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
-      zoomControl: false,
-    });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(map);
-    L.control.zoom({ position: "bottomright" }).addTo(map);
-    mapInstanceRef.current = map;
-    return () => { map.remove(); mapInstanceRef.current = null; };
-  }, []);
+    if (mapRef.current && userLocation) {
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
 
-  // Pan to user location
-  useEffect(() => {
-    if (!mapInstanceRef.current || !userLocation) return;
-    mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      } else {
+        const userIcon = L.divIcon({
+          className: "custom-pin",
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+          html: `<div style="width:12px;height:12px;border-radius:50%;background:hsl(210,100%,60%);border:3px solid white;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>`,
+        });
+        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(mapRef.current);
+      }
+    }
   }, [userLocation]);
 
-  // Update markers whenever venues or events change
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!containerRef.current || mapRef.current) return;
 
-    // Build event lookup by venue id
-    const venueEventMap = new Map<string, Event>();
-    events.forEach(e => { if (!venueEventMap.has(e.venue.id)) venueEventMap.set(e.venue.id, e); });
+    const defaultCenter: [number, number] = userLocation
+      ? [userLocation.lat, userLocation.lng]
+      : [39.5, -98.35];
+    const defaultZoom = userLocation ? 13 : 4;
 
-    // Remove stale markers
-    markersRef.current.forEach((marker, id) => {
-      if (!venues.find(v => v.id === id)) { marker.remove(); markersRef.current.delete(id); }
+    const map = L.map(containerRef.current, {
+      center: defaultCenter,
+      zoom: defaultZoom,
+      zoomControl: false,
+      attributionControl: false,
     });
 
-    // Add/update markers for all venues with valid coords
-    venues.forEach(venue => {
-      const lat = parseFloat(String(venue.lat));
-      const lng = parseFloat(String(venue.lng));
-      if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+    }).addTo(map);
 
-      const event = venueEventMap.get(venue.id);
-      const status = event?.status ?? null;
-      const color = status ? statusColors[status].bg : "#6B7280";
-      const glow = status ? statusColors[status].glow : "rgba(107,114,128,0.3)";
-      const selected = venue.id === selectedVenueId;
-      const icon = createMarkerIcon(color, glow, selected);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    mapRef.current = map;
 
-      if (markersRef.current.has(venue.id)) {
-        markersRef.current.get(venue.id)!.setIcon(icon);
-      } else {
-        const marker = L.marker([lat, lng], { icon })
-          .addTo(map)
-          .on("click", () => onVenueSelect(venue.id));
-        markersRef.current.set(venue.id, marker);
-      }
+    const invalidateMapSize = () => {
+      map.invalidateSize({ animate: false });
+    };
+
+    const scheduleInvalidate = () => {
+      requestAnimationFrame(invalidateMapSize);
+    };
+
+    scheduleInvalidate();
+    window.addEventListener("resize", scheduleInvalidate);
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserverRef.current = new ResizeObserver(scheduleInvalidate);
+      resizeObserverRef.current.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", scheduleInvalidate);
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      map.remove();
+      mapRef.current = null;
+      markersRef.current = {};
+    };
+  }, [userLocation]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    Object.values(markersRef.current).forEach((m) => m.remove());
+    markersRef.current = {};
+
+    venues.forEach((venue) => {
+      const status = getVenueStatus(venue.id, events);
+      const isSelected = venue.id === selectedVenueId;
+      const icon = createPinIcon(status, isSelected);
+
+      const marker = L.marker([venue.lat, venue.lng], { icon })
+        .addTo(map)
+        .on("click", () => onVenueSelect(venue.id));
+
+      marker.bindTooltip(venue.name, {
+        permanent: false,
+        direction: "top",
+        offset: [0, -14],
+        className: "venue-tooltip",
+      });
+
+      markersRef.current[venue.id] = marker;
     });
+
+    requestAnimationFrame(() => map.invalidateSize({ animate: false }));
   }, [venues, events, selectedVenueId, onVenueSelect]);
 
-  return <div ref={mapRef} className="absolute inset-0 z-0" />;
+  return (
+    <>
+      <div ref={containerRef} className="absolute inset-0 z-0" />
+      <div className="absolute bottom-24 left-4 z-20 bg-card/90 backdrop-blur-md rounded-inner p-3 shadow-card space-y-2">
+        {(["live", "today", "this-week"] as const).map((status) => (
+          <div key={status} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                background: statusColors[status].bg,
+                boxShadow: `0 0 6px ${statusColors[status].glow}`,
+              }}
+            />
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              {statusColors[status].label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 };
 
 export default MapView;
