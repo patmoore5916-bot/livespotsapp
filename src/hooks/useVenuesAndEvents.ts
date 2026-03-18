@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { format, isToday, isTomorrow, isThisWeek, addMonths } from "date-fns";
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "this-week";
@@ -19,6 +20,7 @@ export interface Event {
   venue: Venue;
   artist: string;
   genre: string;
+  date: string; // ISO date string
   doorsAt: string;
   startTime: string;
   status: EventStatus;
@@ -31,13 +33,19 @@ export const statusColors = {
   "this-week": { bg: "#6366F1", glow: "rgba(99,102,241,0.35)", label: "This Week" },
 } as const;
 
+/** Derive a display-friendly status from a date string */
+function deriveStatus(dateStr: string, dbStatus: EventStatus): EventStatus {
+  if (dbStatus === "live") return "live";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isToday(d)) return "today";
+  return "this-week"; // future dates
+}
+
 export const useVenues = () => {
   return useQuery({
     queryKey: ["venues"],
     queryFn: async (): Promise<Venue[]> => {
-      const { data, error } = await supabase
-        .from("venues")
-        .select("*");
+      const { data, error } = await supabase.from("venues").select("*");
       if (error) throw error;
       return (data ?? []).map((v) => ({
         id: v.id,
@@ -56,9 +64,15 @@ export const useEvents = () => {
   return useQuery({
     queryKey: ["events"],
     queryFn: async (): Promise<Event[]> => {
+      const today = new Date().toISOString().split("T")[0];
+      const twoMonthsOut = format(addMonths(new Date(), 2), "yyyy-MM-dd");
+
       const { data, error } = await supabase
         .from("events")
         .select("*, venues(*)")
+        .gte("date", today)
+        .lte("date", twoMonthsOut)
+        .order("date", { ascending: true });
       if (error) throw error;
       return (data ?? []).map((e: any) => ({
         id: e.id,
@@ -73,9 +87,10 @@ export const useEvents = () => {
         },
         artist: e.artist,
         genre: e.genre,
+        date: e.date,
         doorsAt: e.doors_at,
         startTime: e.start_time,
-        status: e.status as EventStatus,
+        status: deriveStatus(e.date, e.status as EventStatus),
         ticketUrl: e.ticket_url,
       }));
     },

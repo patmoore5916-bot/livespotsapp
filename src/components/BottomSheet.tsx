@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
+import { format, parseISO, isToday, isTomorrow, isThisWeek } from "date-fns";
 
 interface BottomSheetProps {
   events: Event[];
@@ -14,6 +15,23 @@ interface BottomSheetProps {
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
+
+/** Group events by date label */
+function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
+  const groups = new Map<string, Event[]>();
+  for (const e of events) {
+    const d = parseISO(e.date);
+    let label: string;
+    if (isToday(d)) label = "Today";
+    else if (isTomorrow(d)) label = "Tomorrow";
+    else if (isThisWeek(d, { weekStartsOn: 1 })) label = format(d, "EEEE"); // e.g. "Thursday"
+    else label = format(d, "EEE, MMM d"); // e.g. "Sat, Apr 12"
+
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(e);
+  }
+  return Array.from(groups.entries()).map(([label, events]) => ({ label, events }));
+}
 
 const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
   const genres = useGenres();
@@ -40,12 +58,12 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
     return true;
   });
 
+  const dateGroups = groupByDate(filteredEvents);
   const currentHeight = SNAP_POINTS[snapPoint];
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     const velocity = info.velocity.y;
     const offset = info.offset.y;
-
     if (velocity < -300 || offset < -80) {
       onSnapChange(Math.min(snapPoint + 1, 2));
     } else if (velocity > 300 || offset > 80) {
@@ -74,7 +92,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       <div className="px-5 pb-3">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-xl font-bold tracking-tight text-foreground">
-            {q ? `Results for "${searchQuery}"` : `Live near ${cityName}`}
+            {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
           </h2>
           <span className="font-mono-nums text-xs text-muted-foreground">
             {filteredEvents.length} shows
@@ -90,22 +108,31 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         />
       </div>
 
-      {/* Event list */}
+      {/* Event list grouped by date */}
       <div
         ref={containerRef}
-        className="overflow-y-auto px-5 pb-20 space-y-3"
+        className="overflow-y-auto px-5 pb-20 space-y-4"
         style={{ height: `calc(100% - 140px)` }}
       >
         {filteredEvents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <p className="text-muted-foreground text-sm">No music right now.</p>
+            <p className="text-muted-foreground text-sm">No upcoming shows found.</p>
             <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
               Suggest a Show
             </button>
           </div>
         ) : (
-          filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
+          dateGroups.map((group) => (
+            <div key={group.label}>
+              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground/70 mb-2 sticky top-0 bg-background py-1 z-10">
+                {group.label}
+              </h3>
+              <div className="space-y-3">
+                {group.events.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>
