@@ -6,6 +6,7 @@ import { venues, events, statusColors, type EventStatus } from "@/data/mockEvent
 interface MapViewProps {
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 // Get the "hottest" status for a venue (live > today > this-week)
