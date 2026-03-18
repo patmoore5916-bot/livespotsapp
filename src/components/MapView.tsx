@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { venues, events, statusColors, type EventStatus } from "@/data/mockEvents";
+import { statusColors, type EventStatus, type Venue, type Event } from "@/hooks/useVenuesAndEvents";
 
 interface MapViewProps {
+  venues: Venue[];
+  events: Event[];
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
   userLocation?: { lat: number; lng: number } | null;
 }
 
-// Get the "hottest" status for a venue (live > today > this-week)
-const getVenueStatus = (venueId: string): EventStatus | null => {
+const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
   const venueEvents = events.filter(e => e.venue.id === venueId);
   if (venueEvents.some(e => e.status === "live")) return "live";
   if (venueEvents.some(e => e.status === "today")) return "today";
@@ -37,7 +38,7 @@ const createPinIcon = (status: EventStatus | null, isSelected: boolean) => {
   });
 };
 
-const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -48,7 +49,6 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
     if (mapRef.current && userLocation) {
       mapRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
 
-      // Add/update user location marker
       if (userMarkerRef.current) {
         userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
       } else {
@@ -63,10 +63,10 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
     }
   }, [userLocation]);
 
+  // Initialize map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Default center: US center, zoom out
     const defaultCenter: [number, number] = userLocation
       ? [userLocation.lat, userLocation.lng]
       : [39.5, -98.35];
@@ -79,33 +79,11 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
       attributionControl: false,
     });
 
-    // Dark tile layer
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
     }).addTo(map);
 
-    // Zoom control bottom-right
     L.control.zoom({ position: "bottomright" }).addTo(map);
-
-    // Add venue markers
-    venues.forEach((venue) => {
-      const status = getVenueStatus(venue.id);
-      const icon = createPinIcon(status, false);
-
-      const marker = L.marker([venue.lat, venue.lng], { icon })
-        .addTo(map)
-        .on("click", () => onVenueSelect(venue.id));
-
-      // Tooltip with venue name
-      marker.bindTooltip(venue.name, {
-        permanent: false,
-        direction: "top",
-        offset: [0, -14],
-        className: "venue-tooltip",
-      });
-
-      markersRef.current[venue.id] = marker;
-    });
 
     mapRef.current = map;
 
@@ -116,19 +94,38 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
     };
   }, []);
 
-  // Update selected marker styling
+  // Add/update venue markers when venues or events change
   useEffect(() => {
-    Object.entries(markersRef.current).forEach(([venueId, marker]) => {
-      const status = getVenueStatus(venueId);
-      const isSelected = venueId === selectedVenueId;
-      marker.setIcon(createPinIcon(status, isSelected));
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    // Remove old markers
+    Object.values(markersRef.current).forEach(m => m.remove());
+    markersRef.current = {};
+
+    venues.forEach((venue) => {
+      const status = getVenueStatus(venue.id, events);
+      const isSelected = venue.id === selectedVenueId;
+      const icon = createPinIcon(status, isSelected);
+
+      const marker = L.marker([venue.lat, venue.lng], { icon })
+        .addTo(map)
+        .on("click", () => onVenueSelect(venue.id));
+
+      marker.bindTooltip(venue.name, {
+        permanent: false,
+        direction: "top",
+        offset: [0, -14],
+        className: "venue-tooltip",
+      });
+
+      markersRef.current[venue.id] = marker;
     });
-  }, [selectedVenueId]);
+  }, [venues, events, selectedVenueId, onVenueSelect]);
 
   return (
     <>
       <div ref={containerRef} className="absolute inset-0 z-0" />
-      {/* Map legend */}
       <div className="absolute bottom-24 left-4 z-20 bg-card/90 backdrop-blur-md rounded-inner p-3 shadow-card space-y-2">
         {(["live", "today", "this-week"] as const).map((status) => (
           <div key={status} className="flex items-center gap-2">

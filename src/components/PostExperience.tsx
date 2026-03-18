@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Video, Upload, MapPin, Loader2 } from "lucide-react";
-import { venues } from "@/data/mockEvents";
+import { useVenues } from "@/hooks/useVenuesAndEvents";
 import { uploadExperienceVideo, createExperiencePost } from "@/hooks/useExperiences";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";

@@ -5,7 +5,7 @@ import BottomSheet from "@/components/BottomSheet";
 import ExperienceStories from "@/components/ExperienceStories";
 import ExperienceViewer from "@/components/ExperienceViewer";
 import PostExperience from "@/components/PostExperience";
-import { events } from "@/data/mockEvents";
+import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
 import { useExperiencePosts } from "@/hooks/useExperiences";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { location, cityName, requestLocation } = useUserLocation();
 
+  const { data: venues = [] } = useVenues();
+  const { data: events = [] } = useEvents();
   const { data: experiencePosts = [] } = useExperiencePosts();
 
   const handleVenueSelect = (venueId: string) => {
@@ -74,6 +76,8 @@ const Index = () => {
 
       {/* Map */}
       <MapView
+        venues={venues}
+        events={events}
         onVenueSelect={handleVenueSelect}
         selectedVenueId={selectedVenueId}
         userLocation={location}

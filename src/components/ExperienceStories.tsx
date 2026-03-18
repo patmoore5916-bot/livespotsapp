@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Plus, Flame } from "lucide-react";
 import type { ExperiencePost } from "@/hooks/useExperiences";
-import { venues } from "@/data/mockEvents";
+import { useVenues } from "@/hooks/useVenuesAndEvents";
 
 interface ExperienceStoriesProps {
   posts: ExperiencePost[];

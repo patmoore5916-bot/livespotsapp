@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Volume2, VolumeX, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ExperiencePost } from "@/hooks/useExperiences";
-import { venues } from "@/data/mockEvents";
+import { useVenues } from "@/hooks/useVenuesAndEvents";
 
 interface ExperienceViewerProps {
   posts: ExperiencePost[];

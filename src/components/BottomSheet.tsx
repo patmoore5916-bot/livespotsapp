@@ -2,8 +2,7 @@ import { useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
-import type { Event } from "@/data/mockEvents";
-import { genres } from "@/data/mockEvents";
+import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
 
 interface BottomSheetProps {
   events: Event[];
