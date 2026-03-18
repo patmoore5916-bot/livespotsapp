@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Volume2, VolumeX, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ExperiencePost } from "@/hooks/useExperiences";
-import { venues } from "@/data/mockEvents";
+import { useVenues } from "@/hooks/useVenuesAndEvents";
 
 interface ExperienceViewerProps {
   posts: ExperiencePost[];
@@ -13,6 +13,7 @@ interface ExperienceViewerProps {
 const ExperienceViewer = ({ posts, initialIndex, onClose }: ExperienceViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [muted, setMuted] = useState(true);
+  const { data: venues = [] } = useVenues();
   const post = posts[currentIndex];
   const venue = venues.find(v => v.id === post?.venue_id);
 

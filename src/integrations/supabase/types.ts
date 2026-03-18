@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      events: {
+        Row: {
+          artist: string
+          created_at: string
+          doors_at: string
+          genre: string
+          id: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          ticket_url: string | null
+          venue_id: string
+        }
+        Insert: {
+          artist: string
+          created_at?: string
+          doors_at?: string
+          genre?: string
+          id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          ticket_url?: string | null
+          venue_id: string
+        }
+        Update: {
+          artist?: string
+          created_at?: string
+          doors_at?: string
+          genre?: string
+          id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          ticket_url?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_posts: {
         Row: {
           caption: string | null
@@ -68,6 +112,39 @@ export type Database = {
         }
         Relationships: []
       }
+      venues: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          name: string
+          neighborhood: string
+          type: Database["public"]["Enums"]["venue_type"]
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          neighborhood?: string
+          type?: Database["public"]["Enums"]["venue_type"]
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          neighborhood?: string
+          type?: Database["public"]["Enums"]["venue_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -83,6 +160,8 @@ export type Database = {
     }
     Enums: {
       app_role: "patron" | "operator" | "artist"
+      event_status: "live" | "today" | "this-week"
+      venue_type: "venue" | "bar" | "brewery" | "club"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -211,6 +290,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["patron", "operator", "artist"],
+      event_status: ["live", "today", "this-week"],
+      venue_type: ["venue", "bar", "brewery", "club"],
     },
   },
 } as const

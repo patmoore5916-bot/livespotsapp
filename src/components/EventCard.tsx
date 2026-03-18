@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { MapPin, Clock, ExternalLink } from "lucide-react";
-import type { Event } from "@/data/mockEvents";
-import { statusColors } from "@/data/mockEvents";
+import { statusColors, type Event } from "@/hooks/useVenuesAndEvents";
 
 interface EventCardProps {
   event: Event;
@@ -34,7 +33,7 @@ const EventCard = ({ event }: EventCardProps) => {
               {event.venue.type}
             </span>
             <span className="text-muted-foreground/50">•</span>
-            <span className="font-mono-nums text-xs shrink-0">{event.venue.distance}</span>
+            <span className="font-mono-nums text-xs shrink-0">{event.venue.city}</span>
           </p>
         </div>
 

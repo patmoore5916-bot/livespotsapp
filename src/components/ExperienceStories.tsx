@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Plus, Flame } from "lucide-react";
 import type { ExperiencePost } from "@/hooks/useExperiences";
-import { venues } from "@/data/mockEvents";
+import { useVenues } from "@/hooks/useVenuesAndEvents";
 
 interface ExperienceStoriesProps {
   posts: ExperiencePost[];
@@ -10,6 +10,7 @@ interface ExperienceStoriesProps {
 }
 
 const ExperienceStories = ({ posts, onStoryTap, onPostTap }: ExperienceStoriesProps) => {
+  const { data: venues = [] } = useVenues();
   // Group posts by venue
   const venueGroups = posts.reduce<Record<string, ExperiencePost[]>>((acc, post) => {
     if (!acc[post.venue_id]) acc[post.venue_id] = [];

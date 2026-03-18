@@ -2,8 +2,7 @@ import { useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
-import type { Event } from "@/data/mockEvents";
-import { genres } from "@/data/mockEvents";
+import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
 
 interface BottomSheetProps {
   events: Event[];
@@ -15,6 +14,7 @@ interface BottomSheetProps {
 const SNAP_POINTS = [0.1, 0.45, 0.92];
 
 const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby" }: BottomSheetProps) => {
+  const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [liveOnly, setLiveOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
