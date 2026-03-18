@@ -59,7 +59,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby" }: B
       <div className="px-5 pb-3">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Live in the Triangle
+            Live near {cityName}
           </h2>
           <span className="font-mono-nums text-xs text-muted-foreground">
             {filteredEvents.length} shows
