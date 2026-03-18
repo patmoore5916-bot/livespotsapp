@@ -7,8 +7,9 @@ import { genres } from "@/data/mockEvents";
 
 interface BottomSheetProps {
   events: Event[];
-  snapPoint: number; // 0 = collapsed, 1 = mid, 2 = full
+  snapPoint: number;
   onSnapChange: (snap: number) => void;
+  cityName?: string;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
