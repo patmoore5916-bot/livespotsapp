@@ -65,6 +65,7 @@ const Index = () => {
           >
             <Locate className="w-4 h-4 text-foreground" />
           </motion.button>
+          <HeaderAuth />
         </div>
 
         {/* Experience Stories row */}
