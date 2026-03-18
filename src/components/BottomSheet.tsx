@@ -10,6 +10,7 @@ interface BottomSheetProps {
   onSnapChange: (snap: number) => void;
   cityName?: string;
   userGenres?: string[];
+  searchQuery?: string;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
