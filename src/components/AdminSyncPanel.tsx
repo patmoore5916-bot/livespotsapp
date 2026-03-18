@@ -53,11 +53,11 @@ const AdminSyncPanel = () => {
   const statusIcon = (status: string) => {
     switch (status) {
       case "success":
-        return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+        return <CheckCircle2 className="w-4 h-4 text-primary" />;
       case "error":
         return <XCircle className="w-4 h-4 text-destructive" />;
       default:
-        return <Clock className="w-4 h-4 text-yellow-400 animate-spin" />;
+        return <Clock className="w-4 h-4 text-muted-foreground animate-spin" />;
     }
   };
 
