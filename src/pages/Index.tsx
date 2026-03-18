@@ -24,6 +24,7 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location, cityName, requestLocation } = useUserLocation();
+  const { data: prefs } = useUserPreferences();
 
   const { data: venues = [] } = useVenues();
   const { data: events = [] } = useEvents();
