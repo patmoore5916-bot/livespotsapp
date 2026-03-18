@@ -19,6 +19,7 @@ import { toast } from "sonner";
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [showPost, setShowPost] = useState(false);
   const { user } = useAuth();
