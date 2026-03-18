@@ -8,8 +8,6 @@ import { motion } from "framer-motion";
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(1);
-  const [showMenu, setShowMenu] = useState(false);
-  const { user, roles, signOut } = useAuth();
 
   const handleVenueSelect = (venueId: string) => {
     setSelectedVenueId(venueId);
