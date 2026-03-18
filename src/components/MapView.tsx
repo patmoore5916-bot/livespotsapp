@@ -46,7 +46,7 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
   // Center map on user location when available
   useEffect(() => {
     if (mapRef.current && userLocation) {
-      mapRef.current.setView([userLocation.lat, userLocation.lng], 12, { animate: true });
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
 
       // Add/update user location marker
       if (userMarkerRef.current) {
@@ -70,7 +70,7 @@ const MapView = ({ onVenueSelect, selectedVenueId, userLocation }: MapViewProps)
     const defaultCenter: [number, number] = userLocation
       ? [userLocation.lat, userLocation.lng]
       : [39.5, -98.35];
-    const defaultZoom = userLocation ? 12 : 4;
+    const defaultZoom = userLocation ? 13 : 4;
 
     const map = L.map(containerRef.current, {
       center: defaultCenter,
