@@ -19,6 +19,7 @@ import { toast } from "sonner";
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [showPost, setShowPost] = useState(false);
   const { user } = useAuth();
@@ -54,7 +55,12 @@ const Index = () => {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search cities, venues, artists..."
+              placeholder="Search genre, artist, venue..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value) setSheetSnap(2);
+              }}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full py-3"
             />
           </div>
@@ -97,6 +103,7 @@ const Index = () => {
         onSnapChange={setSheetSnap}
         cityName={cityName}
         userGenres={prefs?.genres}
+        searchQuery={searchQuery}
       />
 
       {/* Full-screen experience viewer */}
