@@ -80,7 +80,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
 const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
-  const [selectedDate, setSelectedDate] = useState<DateFilter>("today");
+  const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
