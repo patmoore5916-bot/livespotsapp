@@ -251,19 +251,6 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
           ))
         )}
       </div>
-
-      {/* Collapse button — sits above BottomNav */}
-      {snapPoint > 0 && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          onClick={() => onSnapChange(0)}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 w-11 h-11 rounded-full bg-card border border-border shadow-card flex items-center justify-center"
-        >
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        </motion.button>
-      )}
     </motion.div>
   );
 };
