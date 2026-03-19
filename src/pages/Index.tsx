@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import MapView from "@/components/MapView";
+import { distanceMiles } from "@/lib/geo";
 import BottomSheet from "@/components/BottomSheet";
 import ExperienceStories from "@/components/ExperienceStories";
 import ExperienceViewer from "@/components/ExperienceViewer";
