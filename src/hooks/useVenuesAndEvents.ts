@@ -173,6 +173,7 @@ export const useEvents = () => {
           lat: 0,
           lng: 0,
           hasMusic: false,
+          musicScore: 0,
         };
 
         events.push({
