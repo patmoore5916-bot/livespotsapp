@@ -70,11 +70,11 @@
 
 /* Leaflet overrides */
 .leaflet-container {
-  background: hsl(var(--background)) !important;
+  background: #1a1a2e !important;
 }
 
 .leaflet-tile {
-  filter: grayscale(1) brightness(0.72) contrast(1.05);
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1) saturate(0.3);
 }
 
 .custom-pin {
