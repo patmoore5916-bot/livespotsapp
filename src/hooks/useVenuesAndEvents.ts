@@ -85,11 +85,8 @@ export const useVenues = () => {
       let offset = 0;
       const limit = 500;
 
-      // Paginate through all venues
       while (true) {
-        const res = await fetch(`${MANUS_BASE}/venues?limit=${limit}&offset=${offset}`);
-        if (!res.ok) throw new Error(`Venues API error: ${res.status}`);
-        const json = await res.json();
+        const json = await fetchManus("venues", limit, offset);
         const items = json.data ?? [];
 
         for (const v of items) {
