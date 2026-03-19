@@ -81,7 +81,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
-  const [liveOnly, setLiveOnly] = useState(false);
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
 
