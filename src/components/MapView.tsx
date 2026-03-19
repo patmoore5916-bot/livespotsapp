@@ -9,6 +9,8 @@ interface MapViewProps {
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
   userLocation?: { lat: number; lng: number } | null;
+  /** Current bottom-sheet snap index so we can offset the map center */
+  sheetSnap?: number;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
@@ -47,7 +49,10 @@ const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: nu
   });
 };
 
-const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
+const SNAP_HEIGHTS = [0.1, 0.45, 0.78];
+const TOP_BAR_PX = 70;
+
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1 }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -99,28 +104,40 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
   }, []);
 
   useEffect(() => {
-    if (mapRef.current && userLocation) {
-      mapRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
+    const map = mapRef.current;
+    if (!map || !userLocation) return;
 
-      if (userMarkerRef.current) {
-        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-      } else {
-        const userIcon = L.divIcon({
-          className: "custom-pin",
-          iconSize: [40, 40],
-          iconAnchor: [20, 20],
-          html: `
-            <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
-              <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(0,122,255,0.15);animation:ping 2.5s ease-out infinite;"></div>
-              <div style="position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(0,122,255,0.2);"></div>
-              <div style="width:14px;height:14px;border-radius:50%;background:#007AFF;border:3px solid white;box-shadow:0 0 8px rgba(0,122,255,0.6);position:relative;z-index:2;"></div>
-            </div>
-          `,
-        });
-        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(mapRef.current);
-      }
+    // Offset the map center so user dot sits between top bar and sheet
+    const viewportH = window.innerHeight;
+    const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
+    const visibleH = viewportH - sheetH - TOP_BAR_PX;
+    // Shift center upward by half the difference between bottom obstruction and top
+    const offsetPx = (sheetH - TOP_BAR_PX) / 2;
+    const targetZoom = map.getZoom() < 11 ? 13 : map.getZoom();
+    const targetPoint = map.project([userLocation.lat, userLocation.lng], targetZoom);
+    // Move the point down in pixel space so that when rendered, dot appears higher
+    const offsetPoint = L.point(targetPoint.x, targetPoint.y + offsetPx / 2);
+    const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+    map.flyTo(offsetLatLng, targetZoom, { animate: true });
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+    } else {
+      const userIcon = L.divIcon({
+        className: "custom-pin",
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        html: `
+          <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(0,122,255,0.15);animation:ping 2.5s ease-out infinite;"></div>
+            <div style="position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(0,122,255,0.2);"></div>
+            <div style="width:14px;height:14px;border-radius:50%;background:#007AFF;border:3px solid white;box-shadow:0 0 8px rgba(0,122,255,0.6);position:relative;z-index:2;"></div>
+          </div>
+        `,
+      });
+      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(map);
     }
-  }, [userLocation]);
+  }, [userLocation, sheetSnap]);
 
   // Initialize map once
   useEffect(() => {
