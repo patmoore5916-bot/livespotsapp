@@ -1,7 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
 
-const MANUS_BASE = "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
+const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = `https://${projectId}.supabase.co/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+  const res = await fetch(url, {
+    headers: {
+      "apikey": anonKey,
+      "Authorization": `Bearer ${anonKey}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+  return res.json();
+};
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "this-week";
@@ -65,11 +77,8 @@ export const useVenues = () => {
       let offset = 0;
       const limit = 500;
 
-      // Paginate through all venues
       while (true) {
-        const res = await fetch(`${MANUS_BASE}/venues?limit=${limit}&offset=${offset}`);
-        if (!res.ok) throw new Error(`Venues API error: ${res.status}`);
-        const json = await res.json();
+        const json = await fetchManus("venues", limit, offset);
         const items = json.data ?? [];
 
         for (const v of items) {
@@ -105,9 +114,7 @@ export const useEvents = () => {
       const limit = 500;
 
       while (true) {
-        const res = await fetch(`${MANUS_BASE}/events?limit=${limit}&offset=${offset}`);
-        if (!res.ok) throw new Error(`Events API error: ${res.status}`);
-        const json = await res.json();
+        const json = await fetchManus("events", limit, offset);
         const items = json.data ?? [];
 
         for (const e of items) {
