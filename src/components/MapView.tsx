@@ -74,8 +74,8 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
 
     const defaultCenter: [number, number] = userLocation
       ? [userLocation.lat, userLocation.lng]
-      : [39.5, -98.35];
-    const defaultZoom = userLocation ? 13 : 4;
+      : [35.227, -80.843];
+    const defaultZoom = userLocation ? 13 : 11;
 
     const map = L.map(containerRef.current, {
       center: defaultCenter,
