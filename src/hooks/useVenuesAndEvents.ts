@@ -52,6 +52,8 @@ export interface Venue {
   lat: number;
   lng: number;
   hasMusic: boolean;
+  /** 0–1 likelihood of live music based on event frequency + venue type */
+  musicScore: number;
 }
 
 export interface Event {
