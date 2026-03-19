@@ -74,7 +74,7 @@
 }
 
 .leaflet-tile {
-  filter: invert(1) hue-rotate(220deg) brightness(1.1) contrast(1.0) saturate(0.4);
+  filter: invert(1) hue-rotate(220deg) brightness(1.2) contrast(1.1) saturate(0.45);
 }
 
 .custom-pin {
