@@ -59,7 +59,7 @@ interface BottomSheetProps {
   userLocation?: { lat: number; lng: number } | null;
 }
 
-const SNAP_POINTS = [0.1, 0.45, 0.92];
+const SNAP_POINTS = [0.1, 0.45, 0.78];
 
 /** Group events by date label */
 function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
