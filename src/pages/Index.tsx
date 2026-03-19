@@ -28,9 +28,38 @@ const Index = () => {
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
-  const { data: venues = [] } = useVenues();
-  const { data: events = [] } = useEvents();
+  const { data: allVenues = [] } = useVenues();
+  const { data: allEvents = [] } = useEvents();
   const { data: experiencePosts = [] } = useExperiencePosts();
+
+  const MAP_RADIUS = 10;
+  const LIST_RADIUS = 30;
+
+  const mapVenues = useMemo(() => {
+    if (!location) return allVenues;
+    return allVenues.filter(
+      (v) => distanceMiles(location.lat, location.lng, v.lat, v.lng) <= MAP_RADIUS
+    );
+  }, [allVenues, location]);
+
+  const listVenueIds = useMemo(() => {
+    if (!location) return new Set(allVenues.map((v) => v.id));
+    return new Set(
+      allVenues
+        .filter((v) => distanceMiles(location.lat, location.lng, v.lat, v.lng) <= LIST_RADIUS)
+        .map((v) => v.id)
+    );
+  }, [allVenues, location]);
+
+  const mapEvents = useMemo(
+    () => allEvents.filter((e) => mapVenues.some((v) => v.id === e.venue.id)),
+    [allEvents, mapVenues]
+  );
+
+  const listEvents = useMemo(
+    () => allEvents.filter((e) => listVenueIds.has(e.venue.id)),
+    [allEvents, listVenueIds]
+  );
 
   const handleVenueSelect = (venueId: string) => {
     setSelectedVenueId(venueId);
