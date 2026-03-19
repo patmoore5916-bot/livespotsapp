@@ -197,6 +197,18 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
           <div
             className="w-2.5 h-2.5 rounded-full"
             style={{
+              background: MUSIC_VENUE_COLOR,
+              boxShadow: `0 0 4px rgba(167,139,250,0.3)`,
+            }}
+          />
+          <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+            Music Venue
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-2.5 h-2.5 rounded-full"
+            style={{
               background: BAR_COLOR,
               border: "1px solid rgba(255,255,255,0.15)",
               opacity: 0.6,
