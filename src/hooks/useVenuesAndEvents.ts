@@ -92,6 +92,7 @@ function mapVenueType(vt: string): VenueType {
 }
 
 let venueCache = new Map<string, Venue>();
+let venueNameIndex = new Map<string, Venue>();
 
 export const useVenues = () => {
   return useQuery({
@@ -99,6 +100,7 @@ export const useVenues = () => {
     queryFn: async (): Promise<Venue[]> => {
       const raw = await fetchAllPages("venues");
       venueCache = new Map();
+      venueNameIndex = new Map();
 
       const venues: Venue[] = [];
       for (const v of raw) {
@@ -117,6 +119,11 @@ export const useVenues = () => {
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
+        // Index by normalized name for fuzzy matching
+        const key = v.name?.toLowerCase().trim();
+        if (key && !venueNameIndex.has(key)) {
+          venueNameIndex.set(key, venue);
+        }
       }
 
       return venues;
@@ -137,7 +144,13 @@ export const useEvents = () => {
         if (!e.eventDate) continue;
 
         const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-        const venue: Venue = venueFromCache ?? {
+        // If no venueId match, try matching by venue name
+        const venueByName = !venueFromCache && e.venueName
+          ? venueNameIndex.get(e.venueName.toLowerCase().trim())
+          : undefined;
+        const matchedVenue = venueFromCache ?? venueByName;
+
+        const venue: Venue = matchedVenue ?? {
           id: String(e.venueId ?? e.id),
           name: e.venueName ?? "Unknown Venue",
           type: "venue",
