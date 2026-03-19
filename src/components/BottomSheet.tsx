@@ -154,7 +154,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
                 setSelectedDate(df.key);
                 setCustomDate(undefined);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-inner text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
+              className={`shrink-0 px-2.5 py-1 rounded-inner text-[10px] font-mono uppercase tracking-widest transition-colors duration-150 ${
                 selectedDate === df.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground"
