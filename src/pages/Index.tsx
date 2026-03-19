@@ -105,6 +105,7 @@ const Index = () => {
         cityName={cityName}
         userGenres={prefs?.genres}
         searchQuery={searchQuery}
+        userLocation={location}
       />
 
       <BottomNav />
