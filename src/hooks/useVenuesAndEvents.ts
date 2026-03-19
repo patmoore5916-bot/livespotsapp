@@ -100,6 +100,7 @@ export const useVenues = () => {
     queryFn: async (): Promise<Venue[]> => {
       const raw = await fetchAllPages("venues");
       venueCache = new Map();
+      venueNameIndex = new Map();
 
       const venues: Venue[] = [];
       for (const v of raw) {
@@ -118,6 +119,11 @@ export const useVenues = () => {
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
+        // Index by normalized name for fuzzy matching
+        const key = v.name?.toLowerCase().trim();
+        if (key && !venueNameIndex.has(key)) {
+          venueNameIndex.set(key, venue);
+        }
       }
 
       return venues;
