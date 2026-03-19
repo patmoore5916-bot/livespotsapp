@@ -140,14 +140,36 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
             {filteredEvents.length} shows
           </span>
         </div>
-        <FilterChips
-          genres={genres}
-          selected={selectedGenre}
-          onSelect={setSelectedGenre}
-          liveOnly={liveOnly}
-          onToggleLive={() => setLiveOnly(!liveOnly)}
-          showForYou={showForYou}
-        />
+
+        {/* Date filters */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
+          {DATE_FILTERS.map((df) => (
+            <motion.button
+              key={df.key}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedDate(df.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-inner text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
+                selectedDate === df.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {df.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Genre filters */}
+        <div className="mt-2">
+          <FilterChips
+            genres={genres}
+            selected={selectedGenre}
+            onSelect={setSelectedGenre}
+            liveOnly={liveOnly}
+            onToggleLive={() => setLiveOnly(!liveOnly)}
+            showForYou={showForYou}
+          />
+        </div>
       </div>
 
       {/* Event list grouped by date */}
