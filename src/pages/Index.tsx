@@ -70,10 +70,10 @@ const Index = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute top-16 right-4 z-40 flex items-center gap-1.5 bg-card/80 backdrop-blur-md rounded-inner px-2.5 py-1.5 shadow-card"
+            className="absolute top-16 right-4 z-40 flex items-center gap-2 bg-card/80 backdrop-blur-md rounded-inner px-3 py-2 shadow-card"
           >
-            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Loading</span>
+            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Loading</span>
           </motion.div>
         )}
       </AnimatePresence>
