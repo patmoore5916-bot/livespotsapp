@@ -89,14 +89,50 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
         .addTo(map)
         .on("click", () => onVenueSelect(venue.id));
 
-      const scoreLabel = venue.musicScore > 0
-        ? `<br/><span style="font-size:9px;opacity:0.7">♪ ${Math.round(venue.musicScore * 100)}% music likelihood</span>`
+      // Build rich popup with venue info + events
+      const venueEvents = events.filter((e) => e.venue.id === venue.id);
+      const typeLabel = venue.type === "bar" ? "Bar" : venue.type === "brewery" ? "Brewery" : venue.type === "club" ? "Club" : "Venue";
+      const musicBadge = venue.hasMusic
+        ? `<span style="background:rgba(167,139,250,0.2);color:#A78BFA;padding:1px 6px;border-radius:8px;font-size:9px;margin-left:4px;">♪ Music</span>`
         : "";
-      marker.bindTooltip(`${venue.name}${scoreLabel}`, {
-        permanent: false,
-        direction: "top",
-        offset: [0, -14],
-        className: "venue-tooltip",
+      const scoreLine = venue.musicScore > 0
+        ? `<div style="font-size:9px;color:#a1a1aa;margin-top:2px;">Music likelihood: ${Math.round(venue.musicScore * 100)}%</div>`
+        : "";
+
+      let eventsHtml = "";
+      if (venueEvents.length > 0) {
+        const eventItems = venueEvents.slice(0, 3).map((ev) => {
+          const statusStyle = statusColors[ev.status];
+          const dot = ev.status === "live" ? `<span style="color:${statusStyle.bg};">● </span>` : "";
+          const time = ev.startTime || "TBA";
+          return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="font-weight:600;font-size:11px;color:#fafafa;">${dot}${ev.artist}</div>
+            <div style="font-size:9px;color:#a1a1aa;">${ev.genre} · ${time} · ${ev.date}</div>
+          </div>`;
+        }).join("");
+        const moreLabel = venueEvents.length > 3 ? `<div style="font-size:9px;color:#FF5C00;margin-top:2px;">+${venueEvents.length - 3} more</div>` : "";
+        eventsHtml = `<div style="margin-top:6px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;">
+          <div style="font-size:9px;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Upcoming</div>
+          ${eventItems}${moreLabel}
+        </div>`;
+      } else if (venue.hasMusic) {
+        eventsHtml = `<div style="margin-top:4px;font-size:9px;color:#71717a;">No events scheduled</div>`;
+      }
+
+      const popupContent = `
+        <div style="font-family:'IBM Plex Sans',sans-serif;min-width:160px;max-width:220px;">
+          <div style="font-weight:700;font-size:13px;color:#fafafa;line-height:1.3;">${venue.name}</div>
+          <div style="font-size:10px;color:#a1a1aa;margin-top:1px;">${typeLabel}${venue.city ? ` · ${venue.city}` : ""}${musicBadge}</div>
+          ${scoreLine}
+          ${eventsHtml}
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        className: "venue-popup",
+        closeButton: false,
+        maxWidth: 240,
+        minWidth: 160,
       });
 
       markersRef.current[venue.id] = marker;
