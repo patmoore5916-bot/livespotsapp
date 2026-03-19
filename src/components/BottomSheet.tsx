@@ -124,12 +124,16 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       animate={{ height: `${currentHeight * 100}vh` }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      {/* Tap handle — replaces drag */}
+      {/* Tap handle with arrow: cycles 0→1→2→0 */}
       <button
         onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
-        className="w-full pt-2 pb-3 px-6"
+        className="w-full flex items-center justify-center pt-2 pb-2 px-6"
       >
-        <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40 mx-auto" />
+        {snapPoint >= 2 ? (
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+        ) : (
+          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+        )}
       </button>
 
       {/* Header */}
