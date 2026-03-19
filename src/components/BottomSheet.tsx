@@ -4,6 +4,7 @@ import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
+import { distanceMiles } from "@/lib/geo";
 import { format, parseISO, isToday, isTomorrow, isWithinInterval, addDays, isSameDay } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -105,7 +106,20 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
     return true;
   });
 
-  const dateGroups = groupByDate(filteredEvents);
+  // Sort by distance to user if location available
+  const sortedEvents = userLocation
+    ? [...filteredEvents].sort((a, b) => {
+        const aDist = a.venue.lat && a.venue.lng
+          ? distanceMiles(userLocation.lat, userLocation.lng, a.venue.lat, a.venue.lng)
+          : Infinity;
+        const bDist = b.venue.lat && b.venue.lng
+          ? distanceMiles(userLocation.lat, userLocation.lng, b.venue.lat, b.venue.lng)
+          : Infinity;
+        return aDist - bDist;
+      })
+    : filteredEvents;
+
+  const dateGroups = groupByDate(sortedEvents);
   const currentHeight = SNAP_POINTS[snapPoint];
 
   const handleDragEnd = (_: any, info: PanInfo) => {
