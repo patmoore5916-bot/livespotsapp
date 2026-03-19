@@ -63,6 +63,21 @@ const Index = () => {
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background pb-[60px]">
+      {/* Loading indicator */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute top-16 right-4 z-40 flex items-center gap-1.5 bg-card/80 backdrop-blur-md rounded-inner px-2.5 py-1.5 shadow-card"
+          >
+            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Loading</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 p-4">
         <div className="flex items-center gap-3">
