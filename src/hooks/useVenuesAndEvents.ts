@@ -142,7 +142,7 @@ export const useEvents = () => {
           name: e.venueName ?? "Unknown Venue",
           type: "venue",
           neighborhood: "",
-          city: "",
+          city: e.city ?? "",
           lat: 0,
           lng: 0,
         };

@@ -56,6 +56,7 @@ interface BottomSheetProps {
   cityName?: string;
   userGenres?: string[];
   searchQuery?: string;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
@@ -77,7 +78,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
   return Array.from(groups.entries()).map(([label, events]) => ({ label, events }));
 }
 
-const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
@@ -234,7 +235,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               </h3>
               <div className="space-y-3">
                 {group.events.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard key={event.id} event={event} userLocation={userLocation} />
                 ))}
               </div>
             </div>

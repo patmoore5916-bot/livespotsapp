@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { MapPin, Clock, ExternalLink, Calendar } from "lucide-react";
+import { MapPin, Clock, ExternalLink, Calendar, Navigation } from "lucide-react";
 import { statusColors, type Event } from "@/hooks/useVenuesAndEvents";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { distanceMiles } from "@/lib/geo";
 
 interface EventCardProps {
   event: Event;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 function formatEventDate(dateStr: string): string {
@@ -14,7 +16,16 @@ function formatEventDate(dateStr: string): string {
   return format(d, "EEE, MMM d");
 }
 
-const EventCard = ({ event }: EventCardProps) => {
+const EventCard = ({ event, userLocation }: EventCardProps) => {
+
+  const hasCoords = event.venue.lat !== 0 && event.venue.lng !== 0;
+  const dist =
+    userLocation && hasCoords
+      ? distanceMiles(userLocation.lat, userLocation.lng, event.venue.lat, event.venue.lng)
+      : null;
+
+  const locationLabel = event.venue.city || (hasCoords ? "Nearby" : "");
+
   return (
     <motion.div
       whileTap={{ scale: 0.97 }}
@@ -39,8 +50,21 @@ const EventCard = ({ event }: EventCardProps) => {
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
             <MapPin className="w-3 h-3 shrink-0" />
             <span className="truncate">{event.venue.name}</span>
-            <span className="text-muted-foreground/50">•</span>
-            <span className="font-mono-nums text-xs shrink-0">{event.venue.city}</span>
+            {locationLabel && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="font-mono-nums text-xs shrink-0">{locationLabel}</span>
+              </>
+            )}
+            {dist !== null && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="font-mono-nums text-xs shrink-0 flex items-center gap-0.5">
+                  <Navigation className="w-2.5 h-2.5" />
+                  {dist < 1 ? "<1" : dist.toFixed(1)} mi
+                </span>
+              </>
+            )}
           </p>
         </div>
 
@@ -49,10 +73,9 @@ const EventCard = ({ event }: EventCardProps) => {
             <Calendar className="w-3 h-3" />
             <span className="font-mono-nums">{formatEventDate(event.date)}</span>
           </span>
-          <span className="font-mono-nums text-xs text-muted-foreground">{event.startTime}</span>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
-            Doors {event.doorsAt}
-          </p>
+          {event.startTime && (
+            <span className="font-mono-nums text-xs text-muted-foreground">{event.startTime}</span>
+          )}
         </div>
       </div>
 
@@ -61,14 +84,28 @@ const EventCard = ({ event }: EventCardProps) => {
           {event.genre}
         </span>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors min-h-[44px] px-3">
-            <ExternalLink className="w-3.5 h-3.5" />
-            Tickets
-          </button>
-          <button className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-foreground/80 transition-colors min-h-[44px] px-3">
-            <Clock className="w-3.5 h-3.5" />
-            Directions
-          </button>
+          {event.ticketUrl && (
+            <a
+              href={event.ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors min-h-[44px] px-3"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Tickets
+            </a>
+          )}
+          {hasCoords && (
+            <a
+              href={`https://maps.google.com/maps?daddr=${event.venue.lat},${event.venue.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-foreground/80 transition-colors min-h-[44px] px-3"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              Directions
+            </a>
+          )}
         </div>
       </div>
     </motion.div>
