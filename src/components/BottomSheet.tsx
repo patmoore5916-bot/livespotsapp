@@ -153,7 +153,6 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               )}
             </button>
           </div>
-          </span>
         </div>
 
         {/* Date filters */}
