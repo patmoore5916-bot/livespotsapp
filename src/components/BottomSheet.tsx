@@ -88,7 +88,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
   const q = searchQuery.toLowerCase().trim();
 
   const filteredEvents = events.filter((e) => {
-    if (!matchesDateFilter(e.date, selectedDate)) return false;
+    if (!matchesDateFilter(e.date, selectedDate, customDate)) return false;
     if (liveOnly && e.status !== "live") return false;
     if (selectedGenre === "For You" && userGenres) {
       return userGenres.some((g) => e.genre.toLowerCase() === g.toLowerCase());
