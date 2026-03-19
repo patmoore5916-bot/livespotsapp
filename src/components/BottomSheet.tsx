@@ -15,7 +15,7 @@ const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
   { key: "all", label: "All Dates" },
   { key: "today", label: "Today" },
   { key: "tomorrow", label: "Tomorrow" },
-  { key: "weekend", label: "This Weekend" },
+  { key: "weekend", label: "Weekend" },
 ];
 
 function isThisWeekend(date: Date): boolean {
