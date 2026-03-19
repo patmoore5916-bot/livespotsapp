@@ -2,3 +2,6 @@ project_id = "sjtbnvoacjibnuumotti"
 
 [functions.sync-events]
 verify_jwt = false
+
+[functions.manus-proxy]
+verify_jwt = false
