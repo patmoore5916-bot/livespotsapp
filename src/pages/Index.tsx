@@ -116,8 +116,8 @@ const Index = () => {
 
       {/* Map */}
       <MapView
-        venues={venues}
-        events={events}
+        venues={mapVenues}
+        events={mapEvents}
         onVenueSelect={handleVenueSelect}
         selectedVenueId={selectedVenueId}
         userLocation={location}
@@ -126,8 +126,8 @@ const Index = () => {
       {/* Bottom Sheet */}
       <BottomSheet
         events={selectedVenueId
-          ? events.filter(e => e.venue.id === selectedVenueId)
-          : events
+          ? listEvents.filter(e => e.venue.id === selectedVenueId)
+          : listEvents
         }
         snapPoint={sheetSnap}
         onSnapChange={setSheetSnap}
