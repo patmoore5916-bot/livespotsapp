@@ -1,15 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 
 const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
-  const { data, error } = await supabase.functions.invoke("manus-proxy", {
-    body: undefined,
-    method: "GET",
-    headers: {},
-  });
-  // supabase.functions.invoke doesn't support GET query params well,
-  // so let's use direct fetch with the project URL
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const url = `https://${projectId}.supabase.co/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
