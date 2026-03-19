@@ -92,6 +92,7 @@ function mapVenueType(vt: string): VenueType {
 }
 
 let venueCache = new Map<string, Venue>();
+let venueNameIndex = new Map<string, Venue>();
 
 export const useVenues = () => {
   return useQuery({
