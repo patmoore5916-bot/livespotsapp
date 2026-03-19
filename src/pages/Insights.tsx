@@ -1,20 +1,13 @@
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import AdminSyncPanel from "@/components/AdminSyncPanel";
-import { ArrowLeft, Users, Music, MapPin, Zap, Share2, Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { MapPin, Music, Zap, TrendingUp } from "lucide-react";
 import {
-  useUserCount,
   useGenreStats,
   useVenuePostStats,
   useEventStatusStats,
-  useExperiencePostCount,
   useVenueCount,
   useEventCount,
+  useExperiencePostCount,
 } from "@/hooks/useAdminStats";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { toast } from "sonner";
 
 const CHART_COLORS = [
   "hsl(22, 100%, 50%)",
@@ -43,35 +36,13 @@ const StatCard = ({
   </div>
 );
 
-const Admin = () => {
-  const { user, loading, hasRole } = useAuth();
-  const navigate = useNavigate();
-  const [copied, setCopied] = useState(false);
-
-  const { data: userCount = 0 } = useUserCount();
+const Insights = () => {
   const { data: genreStats = [] } = useGenreStats();
   const { data: venuePostStats = [] } = useVenuePostStats();
   const { data: eventStatusStats = [] } = useEventStatusStats();
-  const { data: postCount = 0 } = useExperiencePostCount();
   const { data: venueCount = 0 } = useVenueCount();
   const { data: eventCount = 0 } = useEventCount();
-
-  useEffect(() => {
-    if (!loading && (!user || !hasRole("operator"))) {
-      navigate("/");
-    }
-  }, [loading, user, hasRole, navigate]);
-
-  if (loading) return null;
-
-  const insightsUrl = `${window.location.origin}/insights`;
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(insightsUrl);
-    setCopied(true);
-    toast.success("Insights link copied!");
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const { data: postCount = 0 } = useExperiencePostCount();
 
   const statusData = eventStatusStats.map((s) => ({
     name: s.status === "live" ? "Live" : s.status === "today" ? "Today" : "This Week",
@@ -84,48 +55,34 @@ const Admin = () => {
   }));
 
   return (
-    <div className="min-h-[100dvh] bg-background pb-8">
+    <div className="min-h-[100dvh] bg-background pb-12">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-lg font-bold text-foreground flex-1">Dashboard</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopyLink}
-          className="gap-1.5 text-xs"
-        >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-          {copied ? "Copied" : "Share Insights"}
-        </Button>
+      <div className="px-6 pt-14 pb-6 text-center space-y-2">
+        <div className="w-12 h-12 rounded-card bg-primary/10 flex items-center justify-center mx-auto">
+          <TrendingUp className="w-6 h-6 text-primary" />
+        </div>
+        <h1 className="text-xl font-bold text-foreground">Livespot Insights</h1>
+        <p className="text-xs text-muted-foreground">Aggregated platform analytics</p>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 space-y-6 mt-4">
+      <div className="max-w-2xl mx-auto px-4 space-y-6">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Users} label="Total Users" value={userCount} />
+        <div className="grid grid-cols-3 gap-3">
           <StatCard icon={MapPin} label="Venues" value={venueCount} />
           <StatCard icon={Zap} label="Events" value={eventCount} />
-          <StatCard icon={Music} label="Experience Posts" value={postCount} />
+          <StatCard icon={Music} label="Posts" value={postCount} />
         </div>
 
-        {/* Genre Preferences Chart */}
+        {/* Genre Preferences */}
         {genreData.length > 0 && (
           <div className="bg-card border border-border rounded-card p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Genre Preferences</h2>
-            <p className="text-xs text-muted-foreground">How many users prefer each genre</p>
+            <h2 className="text-sm font-semibold text-foreground">Genre Popularity</h2>
+            <p className="text-xs text-muted-foreground">User genre preference distribution</p>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={genreData} layout="vertical" margin={{ left: 0, right: 16 }}>
                   <XAxis type="number" tick={{ fill: "hsl(240,5%,65%)", fontSize: 10 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={70}
-                    tick={{ fill: "hsl(0,0%,98%)", fontSize: 11 }}
-                  />
+                  <YAxis type="category" dataKey="name" width={70} tick={{ fill: "hsl(0,0%,98%)", fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{
                       background: "hsl(240,4%,10%)",
@@ -141,10 +98,10 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Event Status Breakdown */}
+        {/* Event Status */}
         {statusData.length > 0 && (
           <div className="bg-card border border-border rounded-card p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Event Status</h2>
+            <h2 className="text-sm font-semibold text-foreground">Event Status Breakdown</h2>
             <div className="h-48 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -176,36 +133,30 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Top Venues by Posts */}
+        {/* Top Venues */}
         {venuePostStats.length > 0 && (
           <div className="bg-card border border-border rounded-card p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Top Venues by Posts</h2>
+            <h2 className="text-sm font-semibold text-foreground">Top Venues by Engagement</h2>
             <div className="space-y-2">
               {venuePostStats.slice(0, 10).map((v, i) => (
                 <div key={v.venue_id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-xs text-muted-foreground font-mono-nums w-5">{i + 1}.</span>
-                    <span className="text-sm text-foreground truncate">
-                      {v.venue_name || "Unknown"}
-                    </span>
+                    <span className="text-sm text-foreground truncate">{v.venue_name || "Unknown"}</span>
                   </div>
-                  <span className="text-sm font-bold text-primary font-mono-nums">
-                    {v.post_count}
-                  </span>
+                  <span className="text-sm font-bold text-primary font-mono-nums">{v.post_count}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Sync Panel */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">Data Sync</h2>
-          <AdminSyncPanel />
-        </div>
+        <p className="text-center text-[10px] text-muted-foreground/50 pt-4">
+          Powered by Livespot · Data is aggregated and anonymized
+        </p>
       </div>
     </div>
   );
 };
 
-export default Admin;
+export default Insights;
