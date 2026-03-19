@@ -1,15 +1,18 @@
 import { useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CalendarSearch } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
-import { format, parseISO, isToday, isTomorrow, isThisWeek, isSaturday, isSunday, addDays, isWithinInterval } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, isWithinInterval, addDays, isSameDay } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
-type DateFilter = "all" | "today" | "tomorrow" | "weekend";
+type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "custom";
 
-const DATE_FILTERS: { key: DateFilter; label: string }[] = [
-  { key: "all", label: "All Dates" },
+const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
+  { key: "all", label: "All" },
   { key: "today", label: "Today" },
   { key: "tomorrow", label: "Tomorrow" },
   { key: "weekend", label: "This Weekend" },
@@ -36,12 +39,13 @@ function isThisWeekend(date: Date): boolean {
   return isWithinInterval(date, { start: saturday, end: sunday });
 }
 
-function matchesDateFilter(dateStr: string, filter: DateFilter): boolean {
+function matchesDateFilter(dateStr: string, filter: DateFilter, customDate?: Date): boolean {
   if (filter === "all") return true;
   const d = parseISO(dateStr);
   if (filter === "today") return isToday(d);
   if (filter === "tomorrow") return isTomorrow(d);
   if (filter === "weekend") return isThisWeekend(d);
+  if (filter === "custom" && customDate) return isSameDay(d, customDate);
   return true;
 }
 
@@ -64,7 +68,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
     let label: string;
     if (isToday(d)) label = "Today";
     else if (isTomorrow(d)) label = "Tomorrow";
-    else if (isThisWeek(d, { weekStartsOn: 1 })) label = format(d, "EEEE");
+    else if (isThisWeekend(d)) label = format(d, "EEEE");
     else label = format(d, "EEE, MMM d");
 
     if (!groups.has(label)) groups.set(label, []);
@@ -77,15 +81,15 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
-  const [liveOnly, setLiveOnly] = useState(false);
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
 
   const q = searchQuery.toLowerCase().trim();
 
   const filteredEvents = events.filter((e) => {
-    if (!matchesDateFilter(e.date, selectedDate)) return false;
-    if (liveOnly && e.status !== "live") return false;
+    if (!matchesDateFilter(e.date, selectedDate, customDate)) return false;
+    const liveOnly = false; // kept for compatibility
     if (selectedGenre === "For You" && userGenres) {
       return userGenres.some((g) => e.genre.toLowerCase() === g.toLowerCase());
     }
@@ -142,12 +146,15 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         </div>
 
         {/* Date filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
-          {DATE_FILTERS.map((df) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1 items-center">
+          {DATE_CHIPS.map((df) => (
             <motion.button
               key={df.key}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedDate(df.key)}
+              onClick={() => {
+                setSelectedDate(df.key);
+                setCustomDate(undefined);
+              }}
               className={`shrink-0 px-3 py-1.5 rounded-inner text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
                 selectedDate === df.key
                   ? "bg-primary text-primary-foreground"
@@ -157,6 +164,40 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               {df.label}
             </motion.button>
           ))}
+
+          {/* Calendar picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                className={`shrink-0 w-8 h-8 rounded-inner flex items-center justify-center transition-colors duration-150 ${
+                  selectedDate === "custom"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                <CalendarSearch className="w-4 h-4" />
+              </motion.button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customDate}
+                onSelect={(date) => {
+                  setCustomDate(date);
+                  if (date) setSelectedDate("custom");
+                }}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {selectedDate === "custom" && customDate && (
+            <span className="shrink-0 text-[10px] font-mono text-primary">
+              {format(customDate, "MMM d")}
+            </span>
+          )}
         </div>
 
         {/* Genre filters */}
@@ -165,8 +206,8 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
             genres={genres}
             selected={selectedGenre}
             onSelect={setSelectedGenre}
-            liveOnly={liveOnly}
-            onToggleLive={() => setLiveOnly(!liveOnly)}
+            liveOnly={false}
+            onToggleLive={() => {}}
             showForYou={showForYou}
           />
         </div>
