@@ -112,6 +112,7 @@ const Index = () => {
         onVenueSelect={handleVenueSelect}
         selectedVenueId={selectedVenueId}
         userLocation={location}
+        sheetSnap={sheetSnap}
       />
 
       {/* Bottom Sheet */}
