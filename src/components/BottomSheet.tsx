@@ -235,7 +235,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               </h3>
               <div className="space-y-3">
                 {group.events.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard key={event.id} event={event} userLocation={userLocation} />
                 ))}
               </div>
             </div>
