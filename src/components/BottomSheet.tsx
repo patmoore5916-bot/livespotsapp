@@ -4,7 +4,46 @@ import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
-import { format, parseISO, isToday, isTomorrow, isThisWeek } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, isThisWeek, isSaturday, isSunday, addDays, isWithinInterval } from "date-fns";
+
+type DateFilter = "all" | "today" | "tomorrow" | "weekend";
+
+const DATE_FILTERS: { key: DateFilter; label: string }[] = [
+  { key: "all", label: "All Dates" },
+  { key: "today", label: "Today" },
+  { key: "tomorrow", label: "Tomorrow" },
+  { key: "weekend", label: "This Weekend" },
+];
+
+function isThisWeekend(date: Date): boolean {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 6=Sat
+  // Find upcoming Saturday (or today if Sat/Sun)
+  const daysUntilSat = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
+  const saturday = new Date(now);
+  saturday.setHours(0, 0, 0, 0);
+  saturday.setDate(now.getDate() + daysUntilSat);
+  const sunday = addDays(saturday, 1);
+  sunday.setHours(23, 59, 59, 999);
+
+  // If we're already on the weekend, include today
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    return isWithinInterval(date, { start: todayStart, end: sunday });
+  }
+
+  return isWithinInterval(date, { start: saturday, end: sunday });
+}
+
+function matchesDateFilter(dateStr: string, filter: DateFilter): boolean {
+  if (filter === "all") return true;
+  const d = parseISO(dateStr);
+  if (filter === "today") return isToday(d);
+  if (filter === "tomorrow") return isTomorrow(d);
+  if (filter === "weekend") return isThisWeekend(d);
+  return true;
+}
 
 interface BottomSheetProps {
   events: Event[];
@@ -25,8 +64,8 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
     let label: string;
     if (isToday(d)) label = "Today";
     else if (isTomorrow(d)) label = "Tomorrow";
-    else if (isThisWeek(d, { weekStartsOn: 1 })) label = format(d, "EEEE"); // e.g. "Thursday"
-    else label = format(d, "EEE, MMM d"); // e.g. "Sat, Apr 12"
+    else if (isThisWeek(d, { weekStartsOn: 1 })) label = format(d, "EEEE");
+    else label = format(d, "EEE, MMM d");
 
     if (!groups.has(label)) groups.set(label, []);
     groups.get(label)!.push(e);
@@ -37,6 +76,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
 const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
+  const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
   const [liveOnly, setLiveOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
@@ -44,6 +84,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
   const q = searchQuery.toLowerCase().trim();
 
   const filteredEvents = events.filter((e) => {
+    if (!matchesDateFilter(e.date, selectedDate)) return false;
     if (liveOnly && e.status !== "live") return false;
     if (selectedGenre === "For You" && userGenres) {
       return userGenres.some((g) => e.genre.toLowerCase() === g.toLowerCase());
