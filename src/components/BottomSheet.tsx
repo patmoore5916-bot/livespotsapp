@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "custom";
 
 const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
+  { key: "all", label: "All Dates" },
   { key: "today", label: "Today" },
   { key: "tomorrow", label: "Tomorrow" },
   { key: "weekend", label: "This Weekend" },
