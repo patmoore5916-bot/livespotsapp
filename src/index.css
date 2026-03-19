@@ -70,11 +70,11 @@
 
 /* Leaflet overrides */
 .leaflet-container {
-  background: #1c1c1e !important;
+  background: #0e0e10 !important;
 }
 
 .leaflet-tile {
-  filter: invert(1) hue-rotate(220deg) brightness(1.2) contrast(1.1) saturate(0.45);
+  /* no filter needed — dark_all tiles are natively dark */
 }
 
 .custom-pin {
