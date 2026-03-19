@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogOut, Sparkles, ChevronRight } from "lucide-react";
+import { LogOut, Sparkles, ChevronRight, PlusCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { supabase } from "@/integrations/supabase/client";

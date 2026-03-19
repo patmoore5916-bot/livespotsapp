@@ -14,6 +14,7 @@ import Profile from "./pages/Profile.tsx";
 import MyBands from "./pages/MyBands.tsx";
 import Insights from "./pages/Insights.tsx";
 import Social from "./pages/Social.tsx";
+import SubmitShow from "./pages/SubmitShow.tsx";
 
 const queryClient = new QueryClient();
 
