@@ -19,8 +19,9 @@ const Index = () => {
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
-  const { data: rawVenues = [] } = useVenues();
-  const { data: allEvents = [] } = useEvents();
+  const { data: rawVenues = [], isLoading: venuesLoading } = useVenues();
+  const { data: allEvents = [], isLoading: eventsLoading } = useEvents();
+  const isLoading = venuesLoading || eventsLoading;
 
   // Enrich venues with music frequency profiles
   const allVenues = useVenueProfiles(rawVenues, allEvents);
