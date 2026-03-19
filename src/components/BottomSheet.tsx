@@ -68,7 +68,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
     let label: string;
     if (isToday(d)) label = "Today";
     else if (isTomorrow(d)) label = "Tomorrow";
-    else if (isThisWeek(d, { weekStartsOn: 1 })) label = format(d, "EEEE");
+    else if (isThisWeekend(d)) label = format(d, "EEEE");
     else label = format(d, "EEE, MMM d");
 
     if (!groups.has(label)) groups.set(label, []);
