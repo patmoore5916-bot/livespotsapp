@@ -77,7 +77,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
       if (isBar && zoom < hideBarsBelowZoom) return;
 
       const isSelected = venue.id === selectedVenueId;
-      const icon = createPinIcon(status, isSelected, zoom);
+      const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic);
 
       const marker = L.marker([venue.lat, venue.lng], { icon })
         .addTo(map)
