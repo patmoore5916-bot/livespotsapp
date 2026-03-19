@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { AnimatePresence } from "framer-motion";
 import MapView from "@/components/MapView";
 import BottomNav from "@/components/BottomNav";
 import { distanceMiles } from "@/lib/geo";
@@ -11,22 +10,16 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import HeaderAuth from "@/components/HeaderAuth";
 import { Search, Navigation } from "lucide-react";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
 
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [showPost, setShowPost] = useState(false);
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
   const { data: allVenues = [] } = useVenues();
   const { data: allEvents = [] } = useEvents();
-  const { data: experiencePosts = [] } = useExperiencePosts();
 
   const MAP_RADIUS = 10;
   const LIST_RADIUS = 30;
@@ -62,20 +55,10 @@ const Index = () => {
     setSheetSnap(1);
   };
 
-  const handlePostTap = () => {
-    if (!user) {
-      toast("Sign in to share your experience", {
-        action: { label: "Sign In", onClick: () => navigate("/auth") },
-      });
-      return;
-    }
-    setShowPost(true);
-  };
-
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background pb-[60px]">
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-30 p-4 space-y-3">
+      <div className="absolute top-0 left-0 right-0 z-30 p-4">
         <div className="flex items-center gap-3">
           <div className="flex-1 flex items-center gap-2 bg-card/80 backdrop-blur-md rounded-inner px-4 min-h-[44px] shadow-card">
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -98,15 +81,6 @@ const Index = () => {
             <Navigation className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
           </motion.button>
           <HeaderAuth />
-        </div>
-
-        {/* Experience Stories row */}
-        <div className="bg-card/70 backdrop-blur-md rounded-inner px-3 py-2 shadow-card">
-          <ExperienceStories
-            posts={experiencePosts}
-            onStoryTap={(i) => setViewerIndex(i)}
-            onPostTap={handlePostTap}
-          />
         </div>
       </div>
 
@@ -131,27 +105,6 @@ const Index = () => {
         userGenres={prefs?.genres}
         searchQuery={searchQuery}
       />
-
-      {/* Full-screen experience viewer */}
-      <AnimatePresence>
-        {viewerIndex !== null && experiencePosts.length > 0 && (
-          <ExperienceViewer
-            posts={experiencePosts}
-            initialIndex={viewerIndex}
-            onClose={() => setViewerIndex(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Post experience modal */}
-      <AnimatePresence>
-        {showPost && (
-          <PostExperience
-            onClose={() => setShowPost(false)}
-            preselectedVenueId={selectedVenueId}
-          />
-        )}
-      </AnimatePresence>
 
       <BottomNav />
     </div>

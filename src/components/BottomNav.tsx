@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Map, Music, User } from "lucide-react";
+import { Map, Music, User, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/", icon: Map, label: "Map" },
+  { to: "/social", icon: Flame, label: "Social" },
   { to: "/my-bands", icon: Music, label: "My Bands" },
   { to: "/profile", icon: User, label: "Profile" },
 ] as const;
@@ -19,7 +20,7 @@ const BottomNav = () => {
             end={to === "/"}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center gap-0.5 py-2.5 px-4 min-w-[64px] transition-colors",
+                "flex flex-col items-center gap-0.5 py-2.5 px-3 min-w-[56px] transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -31,7 +32,6 @@ const BottomNav = () => {
           </NavLink>
         ))}
       </div>
-      {/* Safe area padding for iOS */}
       <div className="h-[env(safe-area-inset-bottom)]" />
     </nav>
   );
