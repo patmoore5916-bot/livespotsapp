@@ -1,7 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
-const MANUS_BASE = "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
+const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
+  const { data, error } = await supabase.functions.invoke("manus-proxy", {
+    body: undefined,
+    method: "GET",
+    headers: {},
+  });
+  // supabase.functions.invoke doesn't support GET query params well,
+  // so let's use direct fetch with the project URL
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = `https://${projectId}.supabase.co/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+  const res = await fetch(url, {
+    headers: {
+      "apikey": anonKey,
+      "Authorization": `Bearer ${anonKey}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+  return res.json();
+};
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "this-week";
