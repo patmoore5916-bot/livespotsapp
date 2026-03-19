@@ -157,6 +157,8 @@ const Index = () => {
           />
         )}
       </AnimatePresence>
+
+      <BottomNav />
     </div>
   );
 };
