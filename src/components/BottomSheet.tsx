@@ -56,6 +56,7 @@ interface BottomSheetProps {
   cityName?: string;
   userGenres?: string[];
   searchQuery?: string;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.92];
