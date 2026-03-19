@@ -107,16 +107,18 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const map = mapRef.current;
     if (!map || !userLocation) return;
 
-    // Calculate bottom padding so user dot sits centered between top bar and sheet top
+    // Offset the map center so user dot sits between top bar and sheet
     const viewportH = window.innerHeight;
     const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
-    const bottomPadding = sheetH + TOP_BAR_PX;
-
-    map.flyTo([userLocation.lat, userLocation.lng], map.getZoom() < 11 ? 13 : map.getZoom(), {
-      animate: true,
-      paddingBottomRight: [0, bottomPadding / 2],
-      paddingTopLeft: [0, TOP_BAR_PX / 2],
-    });
+    const visibleH = viewportH - sheetH - TOP_BAR_PX;
+    // Shift center upward by half the difference between bottom obstruction and top
+    const offsetPx = (sheetH - TOP_BAR_PX) / 2;
+    const targetZoom = map.getZoom() < 11 ? 13 : map.getZoom();
+    const targetPoint = map.project([userLocation.lat, userLocation.lng], targetZoom);
+    // Move the point down in pixel space so that when rendered, dot appears higher
+    const offsetPoint = L.point(targetPoint.x, targetPoint.y + offsetPx / 2);
+    const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+    map.flyTo(offsetLatLng, targetZoom, { animate: true });
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
