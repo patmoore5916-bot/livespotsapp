@@ -15,7 +15,7 @@ const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive, showF
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onToggleLive}
-        className={`shrink-0 px-3 py-2 rounded-inner text-xs font-mono uppercase tracking-widest min-h-[44px] transition-colors duration-150 ${
+        className={`shrink-0 px-2.5 py-1.5 rounded-inner text-[10px] font-mono uppercase tracking-widest min-h-[32px] transition-colors duration-150 ${
           liveOnly
             ? "bg-primary text-primary-foreground"
             : "bg-secondary text-muted-foreground"
