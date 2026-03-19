@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
 
 const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `https://${projectId}.functions.supabase.co/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+  const url = `${supabaseUrl}/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
 
   const res = await fetch(url, {
     headers: {
