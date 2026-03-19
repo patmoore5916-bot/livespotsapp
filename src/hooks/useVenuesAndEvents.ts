@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
 
-const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
+const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const url = `${supabaseUrl}/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
@@ -19,6 +19,25 @@ const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: 
   }
 
   return res.json();
+};
+
+/** Paginate through all pages from the frontend side */
+const fetchAllPages = async (endpoint: "venues" | "events"): Promise<any[]> => {
+  const all: any[] = [];
+  let offset = 0;
+  const limit = 500;
+
+  while (true) {
+    const json = await fetchManusPage(endpoint, limit, offset);
+    const items = json.data ?? [];
+    all.push(...items);
+
+    const total = json.meta?.total ?? 0;
+    offset += limit;
+    if (offset >= total || items.length < limit) break;
+  }
+
+  return all;
 };
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
@@ -72,95 +91,79 @@ function mapVenueType(vt: string): VenueType {
   return map[vt] ?? "venue";
 }
 
-let venueCache = new Map<number, Venue>();
+let venueCache = new Map<string, Venue>();
 
 export const useVenues = () => {
   return useQuery({
-    queryKey: ["venues", "manus-v2"],
+    queryKey: ["venues", "manus-v3"],
     queryFn: async (): Promise<Venue[]> => {
-      const allVenues: Venue[] = [];
-      venueCache = new Map<number, Venue>();
-      let offset = 0;
-      const limit = 500;
+      const raw = await fetchAllPages("venues");
+      venueCache = new Map();
 
-      while (true) {
-        const json = await fetchManus("venues", limit, offset);
-        const items = json.data ?? [];
+      const venues: Venue[] = [];
+      for (const v of raw) {
+        const lat = parseFloat(v.lat);
+        const lng = parseFloat(v.lng);
+        if (!lat || !lng) continue;
 
-        for (const v of items) {
-          const venue: Venue = {
-            id: String(v.id),
-            name: v.name,
-            type: mapVenueType(v.venueType ?? ""),
-            neighborhood: v.zip ?? "",
-            city: v.city ?? "",
-            lat: parseFloat(v.lat) || 0,
-            lng: parseFloat(v.lng) || 0,
-          };
-          allVenues.push(venue);
-          venueCache.set(Number(v.id), venue);
-        }
-
-        if (items.length < limit) break;
-        offset += limit;
+        const venue: Venue = {
+          id: String(v.id),
+          name: v.name,
+          type: mapVenueType(v.venueType ?? ""),
+          neighborhood: v.zip ?? "",
+          city: v.city ?? "",
+          lat,
+          lng,
+        };
+        venues.push(venue);
+        venueCache.set(String(v.id), venue);
       }
 
-      return allVenues.filter((venue) => venue.lat && venue.lng);
+      return venues;
     },
-    staleTime: 1000 * 60 * 5,
-    gcTime: 0,
-    retry: 1,
+    staleTime: 1000 * 60 * 10,
+    retry: 2,
   });
 };
 
 export const useEvents = () => {
   return useQuery({
-    queryKey: ["events", "manus-v2"],
+    queryKey: ["events", "manus-v3"],
     queryFn: async (): Promise<Event[]> => {
-      const allEvents: Event[] = [];
-      let offset = 0;
-      const limit = 500;
+      const raw = await fetchAllPages("events");
+      const events: Event[] = [];
 
-      while (true) {
-        const json = await fetchManus("events", limit, offset);
-        const items = json.data ?? [];
+      for (const e of raw) {
+        if (!e.eventDate) continue;
 
-        for (const e of items) {
-          if (!e.eventDate) continue;
+        const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
+        const venue: Venue = venueFromCache ?? {
+          id: String(e.venueId ?? e.id),
+          name: e.venueName ?? "Unknown Venue",
+          type: "venue",
+          neighborhood: "",
+          city: "",
+          lat: 0,
+          lng: 0,
+        };
 
-          const venueFromCache = e.venueId ? venueCache.get(Number(e.venueId)) : undefined;
-          const venue: Venue = venueFromCache ?? {
-            id: String(e.venueId ?? e.id),
-            name: e.venueName ?? "Unknown Venue",
-            type: "venue",
-            neighborhood: "",
-            city: "",
-            lat: 0,
-            lng: 0,
-          };
-
-          allEvents.push({
-            id: String(e.id),
-            venue,
-            artist: e.bandName ?? "TBA",
-            genre: e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"),
-            date: e.eventDate,
-            doorsAt: "",
-            startTime: e.startTime ? e.startTime.slice(0, 5) : "",
-            status: deriveStatus(e.eventDate),
-            ticketUrl: e.ticketUrl ?? undefined,
-          });
-        }
-
-        if (items.length < limit) break;
-        offset += limit;
+        events.push({
+          id: String(e.id),
+          venue,
+          artist: e.bandName ?? "TBA",
+          genre: e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"),
+          date: e.eventDate,
+          doorsAt: "",
+          startTime: e.startTime ? e.startTime.slice(0, 5) : "",
+          status: deriveStatus(e.eventDate),
+          ticketUrl: e.ticketUrl ?? undefined,
+        });
       }
 
-      return allEvents;
+      return events;
     },
-    staleTime: 1000 * 60 * 5,
-    gcTime: 0,
-    retry: 1,
+    staleTime: 1000 * 60 * 10,
+    retry: 2,
   });
 };
 
