@@ -3,10 +3,10 @@ import { MapPin, Clock, ExternalLink, Calendar, Navigation } from "lucide-react"
 import { statusColors, type Event } from "@/hooks/useVenuesAndEvents";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { distanceMiles } from "@/lib/geo";
-import { useUserLocation } from "@/hooks/useUserLocation";
 
 interface EventCardProps {
   event: Event;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 function formatEventDate(dateStr: string): string {
@@ -16,8 +16,7 @@ function formatEventDate(dateStr: string): string {
   return format(d, "EEE, MMM d");
 }
 
-const EventCard = ({ event }: EventCardProps) => {
-  const { location } = useUserLocation();
+const EventCard = ({ event, userLocation }: EventCardProps) => {
 
   const hasCoords = event.venue.lat !== 0 && event.venue.lng !== 0;
   const dist =
