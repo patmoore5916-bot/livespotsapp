@@ -104,6 +104,7 @@ function isMusical(venueType: string, vibeTags: string[]): boolean {
 
 let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
+let venueNamesList: { key: string; venue: Venue }[] = [];
 
 export const useVenues = () => {
   return useQuery({
