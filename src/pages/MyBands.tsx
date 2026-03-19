@@ -98,7 +98,7 @@ const MyBands = () => {
               <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono-nums">
                 <span>{event.genre}</span>
                 <span>·</span>
-                <span>{event.start_time}</span>
+                <span>{event.startTime}</span>
               </div>
             </motion.div>
           ))}
