@@ -41,13 +41,14 @@ const Index = () => {
   }, [allVenues, location]);
 
   const mapEvents = useMemo(
-    () => allEvents.filter((e) => mapVenues.some((v) => v.id === e.venue.id)),
+    () => allEvents.filter((e) => e.venue.lat !== 0 && mapVenues.some((v) => v.id === e.venue.id)),
     [allEvents, mapVenues]
   );
 
+  // Show all events in the list — include events without a matched venue
   const listEvents = useMemo(
-    () => allEvents.filter((e) => listVenueIds.has(e.venue.id)),
-    [allEvents, listVenueIds]
+    () => allEvents,
+    [allEvents]
   );
 
   const handleVenueSelect = (venueId: string) => {
