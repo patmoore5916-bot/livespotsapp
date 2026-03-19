@@ -207,6 +207,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_event_status_stats: {
+        Args: never
+        Returns: {
+          event_count: number
+          status: string
+        }[]
+      }
+      get_genre_stats: {
+        Args: never
+        Returns: {
+          genre: string
+          user_count: number
+        }[]
+      }
+      get_user_count: { Args: never; Returns: number }
+      get_venue_post_stats: {
+        Args: never
+        Returns: {
+          post_count: number
+          venue_id: string
+          venue_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
