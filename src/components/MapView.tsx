@@ -73,8 +73,9 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
       const status = getVenueStatus(venue.id, events);
       const isBar = !status;
 
-      // Hide bar-only venues when zoomed out
-      if (isBar && zoom < hideBarsBelowZoom) return;
+      // Hide non-music bar-only venues when zoomed out; show music venues earlier
+      if (isBar && !venue.hasMusic && zoom < hideBarsBelowZoom) return;
+      if (isBar && venue.hasMusic && zoom < hideBarsBelowZoom - 2) return;
 
       const isSelected = venue.id === selectedVenueId;
       const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic);
@@ -83,7 +84,10 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
         .addTo(map)
         .on("click", () => onVenueSelect(venue.id));
 
-      marker.bindTooltip(venue.name, {
+      const scoreLabel = venue.musicScore > 0
+        ? `<br/><span style="font-size:9px;opacity:0.7">♪ ${Math.round(venue.musicScore * 100)}% music likelihood</span>`
+        : "";
+      marker.bindTooltip(`${venue.name}${scoreLabel}`, {
         permanent: false,
         direction: "top",
         offset: [0, -14],
