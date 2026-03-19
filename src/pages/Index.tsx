@@ -4,18 +4,13 @@ import MapView from "@/components/MapView";
 import BottomNav from "@/components/BottomNav";
 import { distanceMiles } from "@/lib/geo";
 import BottomSheet from "@/components/BottomSheet";
-import ExperienceStories from "@/components/ExperienceStories";
-import ExperienceViewer from "@/components/ExperienceViewer";
-import PostExperience from "@/components/PostExperience";
 import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
-import { useExperiencePosts } from "@/hooks/useExperiences";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import HeaderAuth from "@/components/HeaderAuth";
 import { Search, Navigation } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const Index = () => {
