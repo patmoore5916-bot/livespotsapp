@@ -49,7 +49,10 @@ const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: nu
   });
 };
 
-const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation }: MapViewProps) => {
+const SNAP_HEIGHTS = [0.1, 0.45, 0.78];
+const TOP_BAR_PX = 70;
+
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1 }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
