@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import MapView from "@/components/MapView";
+import BottomNav from "@/components/BottomNav";
 import { distanceMiles } from "@/lib/geo";
 import BottomSheet from "@/components/BottomSheet";
 import ExperienceStories from "@/components/ExperienceStories";
@@ -77,7 +78,7 @@ const Index = () => {
   };
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-background">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-background pb-[60px]">
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 p-4 space-y-3">
         <div className="flex items-center gap-3">
@@ -156,6 +157,8 @@ const Index = () => {
           />
         )}
       </AnimatePresence>
+
+      <BottomNav />
     </div>
   );
 };

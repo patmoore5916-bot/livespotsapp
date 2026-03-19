@@ -10,6 +10,8 @@ import Onboarding from "./pages/Onboarding.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Admin from "./pages/Admin.tsx";
 import Install from "./pages/Install.tsx";
+import Profile from "./pages/Profile.tsx";
+import MyBands from "./pages/MyBands.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/my-bands" element={<MyBands />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
