@@ -39,12 +39,13 @@ function isThisWeekend(date: Date): boolean {
   return isWithinInterval(date, { start: saturday, end: sunday });
 }
 
-function matchesDateFilter(dateStr: string, filter: DateFilter): boolean {
+function matchesDateFilter(dateStr: string, filter: DateFilter, customDate?: Date): boolean {
   if (filter === "all") return true;
   const d = parseISO(dateStr);
   if (filter === "today") return isToday(d);
   if (filter === "tomorrow") return isTomorrow(d);
   if (filter === "weekend") return isThisWeekend(d);
+  if (filter === "custom" && customDate) return isSameDay(d, customDate);
   return true;
 }
 
