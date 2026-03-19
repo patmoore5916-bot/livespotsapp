@@ -145,7 +145,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         </div>
 
         {/* Date filters */}
-        <div className="flex gap-2 flex-wrap pb-2 px-1 items-center">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none items-center">
           {DATE_CHIPS.map((df) => (
             <motion.button
               key={df.key}
@@ -154,7 +154,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
                 setSelectedDate(df.key);
                 setCustomDate(undefined);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-inner text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
+              className={`shrink-0 px-2.5 py-1 rounded-inner text-[10px] font-mono uppercase tracking-widest transition-colors duration-150 ${
                 selectedDate === df.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground"
@@ -169,7 +169,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
             <PopoverTrigger asChild>
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className={`shrink-0 w-8 h-8 rounded-inner flex items-center justify-center transition-colors duration-150 ${
+                className={`shrink-0 w-7 h-7 rounded-inner flex items-center justify-center transition-colors duration-150 ${
                   selectedDate === "custom"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
