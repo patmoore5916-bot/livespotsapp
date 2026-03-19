@@ -100,7 +100,7 @@ const Index = () => {
             onClick={requestLocation}
             className="w-11 h-11 rounded-inner bg-primary shadow-card flex items-center justify-center"
           >
-            <Locate className="w-5 h-5 text-primary-foreground" />
+            <Navigation className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
           </motion.button>
           <HeaderAuth />
         </div>
