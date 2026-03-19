@@ -52,6 +52,8 @@ export interface Venue {
   lat: number;
   lng: number;
   hasMusic: boolean;
+  /** 0–1 likelihood of live music based on event frequency + venue type */
+  musicScore: number;
 }
 
 export interface Event {
@@ -117,6 +119,7 @@ export const useVenues = () => {
         const lng = parseFloat(v.lng);
         if (!lat || !lng) continue;
 
+        const hasMusicType = isMusical(v.venueType ?? "", v.vibeTags ?? []);
         const venue: Venue = {
           id: String(v.id),
           name: v.name,
@@ -125,7 +128,8 @@ export const useVenues = () => {
           city: v.city ?? "",
           lat,
           lng,
-          hasMusic: isMusical(v.venueType ?? "", v.vibeTags ?? []),
+          hasMusic: hasMusicType,
+          musicScore: hasMusicType ? 0.7 : 0, // base score from type, events will boost later
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
@@ -169,6 +173,7 @@ export const useEvents = () => {
           lat: 0,
           lng: 0,
           hasMusic: false,
+          musicScore: 0,
         };
 
         events.push({

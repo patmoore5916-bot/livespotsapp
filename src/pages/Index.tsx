@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { distanceMiles } from "@/lib/geo";
 import BottomSheet from "@/components/BottomSheet";
 import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
+import { useVenueProfiles } from "@/hooks/useVenueProfiles";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
@@ -18,8 +19,11 @@ const Index = () => {
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
-  const { data: allVenues = [] } = useVenues();
+  const { data: rawVenues = [] } = useVenues();
   const { data: allEvents = [] } = useEvents();
+
+  // Enrich venues with music frequency profiles
+  const allVenues = useVenueProfiles(rawVenues, allEvents);
 
   const MAP_RADIUS = 30;
   const LIST_RADIUS = 60;
