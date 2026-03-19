@@ -25,7 +25,7 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
 const fetchAllPages = async (endpoint: "venues" | "events"): Promise<any[]> => {
   const all: any[] = [];
   let offset = 0;
-  const limit = 500;
+  const limit = 200;
 
   while (true) {
     const json = await fetchManusPage(endpoint, limit, offset);
