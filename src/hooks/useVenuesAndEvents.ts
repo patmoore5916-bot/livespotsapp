@@ -104,6 +104,7 @@ function isMusical(venueType: string, vibeTags: string[]): boolean {
 
 let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
+let venueNamesList: { key: string; venue: Venue }[] = [];
 
 export const useVenues = () => {
   return useQuery({
@@ -112,6 +113,7 @@ export const useVenues = () => {
       const raw = await fetchAllPages("venues");
       venueCache = new Map();
       venueNameIndex = new Map();
+      venueNamesList = [];
 
       const venues: Venue[] = [];
       for (const v of raw) {
@@ -129,14 +131,14 @@ export const useVenues = () => {
           lat,
           lng,
           hasMusic: hasMusicType,
-          musicScore: hasMusicType ? 0.7 : 0, // base score from type, events will boost later
+          musicScore: hasMusicType ? 0.7 : 0,
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
-        // Index by normalized name for fuzzy matching
         const key = v.name?.toLowerCase().trim();
-        if (key && !venueNameIndex.has(key)) {
-          venueNameIndex.set(key, venue);
+        if (key) {
+          if (!venueNameIndex.has(key)) venueNameIndex.set(key, venue);
+          venueNamesList.push({ key, venue });
         }
       }
 
@@ -158,11 +160,24 @@ export const useEvents = () => {
         if (!e.eventDate) continue;
 
         const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-        // If no venueId match, try matching by venue name
-        const venueByName = !venueFromCache && e.venueName
-          ? venueNameIndex.get(e.venueName.toLowerCase().trim())
+        // Try exact name match
+        const nameKey = e.venueName?.toLowerCase().trim() ?? "";
+        const venueByName = !venueFromCache && nameKey
+          ? venueNameIndex.get(nameKey)
           : undefined;
-        const matchedVenue = venueFromCache ?? venueByName;
+        // Try substring match if exact fails
+        let venueBySubstring: Venue | undefined;
+        if (!venueFromCache && !venueByName && nameKey.length > 3) {
+          const match = venueNamesList.find(
+            (v) => v.key.includes(nameKey) || nameKey.includes(v.key)
+          );
+          venueBySubstring = match?.venue;
+        }
+        const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
+
+        // Use event's own lat/lng if available and venue wasn't matched
+        const eventLat = parseFloat(e.lat) || 0;
+        const eventLng = parseFloat(e.lng) || 0;
 
         const venue: Venue = matchedVenue ?? {
           id: String(e.venueId ?? e.id),
@@ -170,8 +185,8 @@ export const useEvents = () => {
           type: "venue",
           neighborhood: "",
           city: e.city ?? "",
-          lat: 0,
-          lng: 0,
+          lat: eventLat,
+          lng: eventLng,
           hasMusic: false,
           musicScore: 0,
         };
