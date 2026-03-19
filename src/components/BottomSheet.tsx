@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "custom";
 
 const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
+  { key: "all", label: "All Dates" },
   { key: "today", label: "Today" },
   { key: "tomorrow", label: "Tomorrow" },
   { key: "weekend", label: "This Weekend" },
@@ -79,7 +80,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
 const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "" }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
-  const [selectedDate, setSelectedDate] = useState<DateFilter>("today");
+  const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
