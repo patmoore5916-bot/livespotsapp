@@ -9,8 +9,8 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import HeaderAuth from "@/components/HeaderAuth";
-import { Search, Navigation } from "lucide-react";
-import { motion } from "framer-motion";
+import { Search, Navigation, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
