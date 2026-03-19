@@ -13,7 +13,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import HeaderAuth from "@/components/HeaderAuth";
-import { Search, Locate } from "lucide-react";
+import { Search, Navigation } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
