@@ -145,7 +145,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         </div>
 
         {/* Date filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1 items-center">
+        <div className="flex gap-2 flex-wrap pb-2 px-1 items-center">
           {DATE_CHIPS.map((df) => (
             <motion.button
               key={df.key}

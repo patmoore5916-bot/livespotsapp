@@ -170,7 +170,7 @@ export const useEvents = () => {
 export const useGenres = () => {
   const { data: events } = useEvents();
   const genres = events
-    ? ["All", ...new Set(events.map((e) => e.genre).filter(Boolean))]
-    : ["All"];
+    ? [...new Set(events.map((e) => e.genre).filter(Boolean))]
+    : [];
   return genres;
 };
