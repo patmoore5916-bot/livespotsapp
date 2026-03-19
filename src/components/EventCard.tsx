@@ -20,8 +20,8 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
 
   const hasCoords = event.venue.lat !== 0 && event.venue.lng !== 0;
   const dist =
-    location && hasCoords
-      ? distanceMiles(location.lat, location.lng, event.venue.lat, event.venue.lng)
+    userLocation && hasCoords
+      ? distanceMiles(userLocation.lat, userLocation.lng, event.venue.lat, event.venue.lng)
       : null;
 
   const locationLabel = event.venue.city || (hasCoords ? "Nearby" : "");
