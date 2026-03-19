@@ -1,15 +1,18 @@
 import { useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CalendarSearch } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
-import { format, parseISO, isToday, isTomorrow, isThisWeek, isSaturday, isSunday, addDays, isWithinInterval } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, isWithinInterval, addDays, isSameDay } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
-type DateFilter = "all" | "today" | "tomorrow" | "weekend";
+type DateFilter = "all" | "today" | "tomorrow" | "weekend" | "custom";
 
-const DATE_FILTERS: { key: DateFilter; label: string }[] = [
-  { key: "all", label: "All Dates" },
+const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
+  { key: "all", label: "All" },
   { key: "today", label: "Today" },
   { key: "tomorrow", label: "Tomorrow" },
   { key: "weekend", label: "This Weekend" },
