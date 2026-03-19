@@ -20,6 +20,7 @@ const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null =>
 };
 
 const BAR_COLOR = "#52525b";
+const MUSIC_VENUE_COLOR = "#A78BFA"; // violet-400
 
 const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: number) => {
   const isBar = !status;
