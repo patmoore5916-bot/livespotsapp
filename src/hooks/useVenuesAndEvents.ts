@@ -179,16 +179,22 @@ export const useEvents = () => {
         const eventLat = parseFloat(e.lat) || 0;
         const eventLng = parseFloat(e.lng) || 0;
 
-        const venue: Venue = matchedVenue ?? {
+        const baseVenue: Venue = matchedVenue ?? {
           id: String(e.venueId ?? e.id),
           name: e.venueName ?? "Unknown Venue",
           type: "venue",
           neighborhood: "",
-          city: e.city ?? "",
+          city: "",
           lat: eventLat,
           lng: eventLng,
           hasMusic: false,
           musicScore: 0,
+        };
+
+        // Ensure city is populated — prefer venue's city, fallback to event-level city
+        const venue: Venue = {
+          ...baseVenue,
+          city: baseVenue.city || e.city || "",
         };
 
         events.push({
