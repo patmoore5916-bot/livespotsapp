@@ -130,9 +130,9 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0}
         onDragEnd={handleDragEnd}
-        className="cursor-grab active:cursor-grabbing pt-3 pb-4 px-6"
+        className="cursor-grab active:cursor-grabbing pt-2 pb-3 px-6 touch-none"
       >
-        <div className="w-10 h-1 rounded-full bg-accent mx-auto" />
+        <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40 mx-auto" />
       </motion.div>
 
       {/* Header */}
