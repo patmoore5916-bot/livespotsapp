@@ -122,9 +122,7 @@ export const useEvents = () => {
       const limit = 500;
 
       while (true) {
-        const res = await fetch(`${MANUS_BASE}/events?limit=${limit}&offset=${offset}`);
-        if (!res.ok) throw new Error(`Events API error: ${res.status}`);
-        const json = await res.json();
+        const json = await fetchManus("events", limit, offset);
         const items = json.data ?? [];
 
         for (const e of items) {
