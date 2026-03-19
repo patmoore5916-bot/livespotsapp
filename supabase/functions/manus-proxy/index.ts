@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const limit = url.searchParams.get("limit") || "500";
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "200"), 200);
     const offset = url.searchParams.get("offset") || "0";
 
     const manusUrl = `${MANUS_BASE}/${endpoint}?limit=${limit}&offset=${offset}`;
