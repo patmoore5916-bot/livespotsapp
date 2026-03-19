@@ -12,6 +12,7 @@ import Admin from "./pages/Admin.tsx";
 import Install from "./pages/Install.tsx";
 import Profile from "./pages/Profile.tsx";
 import MyBands from "./pages/MyBands.tsx";
+import Insights from "./pages/Insights.tsx";
 
 const queryClient = new QueryClient();
 
