@@ -22,15 +22,16 @@ const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null =>
 const BAR_COLOR = "#52525b";
 const MUSIC_VENUE_COLOR = "#A78BFA"; // violet-400
 
-const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: number) => {
+const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: number, hasMusic: boolean) => {
   const isBar = !status;
   // Scale event pins larger when zoomed out
   const zoomScale = zoom < 11 ? 1.4 : zoom < 13 ? 1.2 : 1;
-  const baseSize = isSelected ? 20 : status === "live" ? 16 : status ? 14 : 8;
+  const baseSize = isSelected ? 20 : status === "live" ? 16 : status ? 14 : hasMusic ? 10 : 8;
   const size = Math.round(baseSize * (isBar ? 1 : zoomScale));
   const glowSize = size + (isBar ? 4 : 16);
 
-  const colors = status ? statusColors[status] : { bg: BAR_COLOR, glow: "transparent" };
+  const barColor = hasMusic ? MUSIC_VENUE_COLOR : BAR_COLOR;
+  const colors = status ? statusColors[status] : { bg: barColor, glow: hasMusic ? "rgba(167,139,250,0.3)" : "transparent" };
 
   return L.divIcon({
     className: "custom-pin",
@@ -40,7 +41,7 @@ const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: nu
       <div style="position:relative;width:${glowSize}px;height:${glowSize}px;display:flex;align-items:center;justify-content:center;">
         ${status === "live" ? `<div style="position:absolute;width:${glowSize}px;height:${glowSize}px;border-radius:50%;background:${colors.glow};animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ""}
         ${status ? `<div style="position:absolute;width:${size + 8}px;height:${size + 8}px;border-radius:50%;background:${colors.glow};filter:blur(4px);"></div>` : ""}
-        <div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};border:${isBar ? "1px" : "2px"} solid ${isSelected ? "#fff" : isBar ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)"};box-shadow:0 0 ${status === "live" ? "12" : isBar ? "0" : "6"}px ${colors.glow};position:relative;z-index:${status ? 2 : 1};opacity:${isBar ? "0.6" : "1"};"></div>
+        <div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};border:${isBar ? "1px" : "2px"} solid ${isSelected ? "#fff" : isBar ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)"};box-shadow:0 0 ${status === "live" ? "12" : isBar && hasMusic ? "4" : isBar ? "0" : "6"}px ${colors.glow};position:relative;z-index:${status ? 2 : 1};opacity:${isBar && !hasMusic ? "0.6" : "1"};"></div>
       </div>
     `,
   });
