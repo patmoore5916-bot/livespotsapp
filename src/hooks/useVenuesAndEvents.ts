@@ -4,14 +4,20 @@ import { isToday, isTomorrow } from "date-fns";
 const fetchManus = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `https://${projectId}.supabase.co/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+  const url = `https://${projectId}.functions.supabase.co/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+
   const res = await fetch(url, {
     headers: {
-      "apikey": anonKey,
-      "Authorization": `Bearer ${anonKey}`,
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
     },
   });
-  if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Proxy error ${res.status}: ${text}`);
+  }
+
   return res.json();
 };
 
@@ -47,7 +53,7 @@ export const statusColors = {
 } as const;
 
 function deriveStatus(dateStr: string): EventStatus {
-  const d = new Date(dateStr + "T00:00:00");
+  const d = new Date(`${dateStr}T00:00:00`);
   if (isToday(d)) return "today";
   if (isTomorrow(d)) return "today";
   return "this-week";
@@ -66,14 +72,14 @@ function mapVenueType(vt: string): VenueType {
   return map[vt] ?? "venue";
 }
 
-// Venue cache so events can look up venue data
 let venueCache = new Map<number, Venue>();
 
 export const useVenues = () => {
   return useQuery({
-    queryKey: ["venues"],
+    queryKey: ["venues", "manus-v2"],
     queryFn: async (): Promise<Venue[]> => {
       const allVenues: Venue[] = [];
+      venueCache = new Map<number, Venue>();
       let offset = 0;
       const limit = 500;
 
@@ -92,22 +98,24 @@ export const useVenues = () => {
             lng: parseFloat(v.lng) || 0,
           };
           allVenues.push(venue);
-          venueCache.set(v.id, venue);
+          venueCache.set(Number(v.id), venue);
         }
 
         if (items.length < limit) break;
         offset += limit;
       }
 
-      return allVenues;
+      return allVenues.filter((venue) => venue.lat && venue.lng);
     },
-    staleTime: 1000 * 60 * 30,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 0,
+    retry: 1,
   });
 };
 
 export const useEvents = () => {
   return useQuery({
-    queryKey: ["events"],
+    queryKey: ["events", "manus-v2"],
     queryFn: async (): Promise<Event[]> => {
       const allEvents: Event[] = [];
       let offset = 0;
@@ -118,7 +126,9 @@ export const useEvents = () => {
         const items = json.data ?? [];
 
         for (const e of items) {
-          const venueFromCache = e.venueId ? venueCache.get(e.venueId) : undefined;
+          if (!e.eventDate) continue;
+
+          const venueFromCache = e.venueId ? venueCache.get(Number(e.venueId)) : undefined;
           const venue: Venue = venueFromCache ?? {
             id: String(e.venueId ?? e.id),
             name: e.venueName ?? "Unknown Venue",
@@ -134,10 +144,10 @@ export const useEvents = () => {
             venue,
             artist: e.bandName ?? "TBA",
             genre: e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"),
-            date: e.eventDate ?? "",
+            date: e.eventDate,
             doorsAt: "",
             startTime: e.startTime ? e.startTime.slice(0, 5) : "",
-            status: deriveStatus(e.eventDate ?? ""),
+            status: deriveStatus(e.eventDate),
             ticketUrl: e.ticketUrl ?? undefined,
           });
         }
@@ -148,7 +158,9 @@ export const useEvents = () => {
 
       return allEvents;
     },
-    staleTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 0,
+    retry: 1,
   });
 };
 
