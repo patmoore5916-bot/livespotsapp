@@ -9,6 +9,8 @@ interface MapViewProps {
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
   userLocation?: { lat: number; lng: number } | null;
+  /** Current bottom-sheet snap index so we can offset the map center */
+  sheetSnap?: number;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
