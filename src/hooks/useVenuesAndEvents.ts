@@ -125,6 +125,7 @@ export const useVenues = () => {
           city: v.city ?? "",
           lat,
           lng,
+          hasMusic: isMusical(v.venueType ?? "", v.vibeTags ?? []),
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
