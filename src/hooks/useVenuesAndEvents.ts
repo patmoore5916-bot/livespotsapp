@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, isTomorrow, addMonths } from "date-fns";
+import { isToday, isTomorrow } from "date-fns";
+
+const MANUS_BASE = "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "this-week";
@@ -40,23 +41,58 @@ function deriveStatus(dateStr: string): EventStatus {
   return "this-week";
 }
 
+function mapVenueType(vt: string): VenueType {
+  const map: Record<string, VenueType> = {
+    bar: "bar",
+    brewery: "brewery",
+    club: "club",
+    nightclub: "club",
+    restaurant_bar: "bar",
+    music_venue: "venue",
+    concert_hall: "venue",
+  };
+  return map[vt] ?? "venue";
+}
+
+// Venue cache so events can look up venue data
+let venueCache = new Map<number, Venue>();
+
 export const useVenues = () => {
   return useQuery({
     queryKey: ["venues"],
     queryFn: async (): Promise<Venue[]> => {
-      const { data, error } = await supabase.from("venues").select("*");
-      if (error) throw error;
-      return (data ?? []).map((v) => ({
-        id: v.id,
-        name: v.name,
-        type: v.type as VenueType,
-        neighborhood: v.neighborhood,
-        city: v.city,
-        lat: v.lat,
-        lng: v.lng,
-      }));
+      const allVenues: Venue[] = [];
+      let offset = 0;
+      const limit = 500;
+
+      // Paginate through all venues
+      while (true) {
+        const res = await fetch(`${MANUS_BASE}/venues?limit=${limit}&offset=${offset}`);
+        if (!res.ok) throw new Error(`Venues API error: ${res.status}`);
+        const json = await res.json();
+        const items = json.data ?? [];
+
+        for (const v of items) {
+          const venue: Venue = {
+            id: String(v.id),
+            name: v.name,
+            type: mapVenueType(v.venueType ?? ""),
+            neighborhood: v.zip ?? "",
+            city: v.city ?? "",
+            lat: parseFloat(v.lat) || 0,
+            lng: parseFloat(v.lng) || 0,
+          };
+          allVenues.push(venue);
+          venueCache.set(v.id, venue);
+        }
+
+        if (items.length < limit) break;
+        offset += limit;
+      }
+
+      return allVenues;
     },
-    staleTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 30,
   });
 };
 
@@ -64,36 +100,46 @@ export const useEvents = () => {
   return useQuery({
     queryKey: ["events"],
     queryFn: async (): Promise<Event[]> => {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const twoMonthsOut = format(addMonths(new Date(), 2), "yyyy-MM-dd");
+      const allEvents: Event[] = [];
+      let offset = 0;
+      const limit = 500;
 
-      const { data, error } = await supabase
-        .from("events")
-        .select("*, venues(*)")
-        .gte("date", today)
-        .lte("date", twoMonthsOut)
-        .order("date", { ascending: true });
+      while (true) {
+        const res = await fetch(`${MANUS_BASE}/events?limit=${limit}&offset=${offset}`);
+        if (!res.ok) throw new Error(`Events API error: ${res.status}`);
+        const json = await res.json();
+        const items = json.data ?? [];
 
-      if (error) throw error;
+        for (const e of items) {
+          const venueFromCache = e.venueId ? venueCache.get(e.venueId) : undefined;
+          const venue: Venue = venueFromCache ?? {
+            id: String(e.venueId ?? e.id),
+            name: e.venueName ?? "Unknown Venue",
+            type: "venue",
+            neighborhood: "",
+            city: "",
+            lat: 0,
+            lng: 0,
+          };
 
-      return (data ?? []).map((e) => {
-        const v = e.venues as any;
-        const venue: Venue = v
-          ? { id: v.id, name: v.name, type: v.type, neighborhood: v.neighborhood, city: v.city, lat: v.lat, lng: v.lng }
-          : { id: e.venue_id, name: "Unknown Venue", type: "venue", neighborhood: "", city: "", lat: 0, lng: 0 };
+          allEvents.push({
+            id: String(e.id),
+            venue,
+            artist: e.bandName ?? "TBA",
+            genre: e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"),
+            date: e.eventDate ?? "",
+            doorsAt: "",
+            startTime: e.startTime ? e.startTime.slice(0, 5) : "",
+            status: deriveStatus(e.eventDate ?? ""),
+            ticketUrl: e.ticketUrl ?? undefined,
+          });
+        }
 
-        return {
-          id: e.id,
-          venue,
-          artist: e.artist,
-          genre: e.genre,
-          date: e.date,
-          doorsAt: e.doors_at,
-          startTime: e.start_time,
-          status: deriveStatus(e.date),
-          ticketUrl: e.ticket_url ?? undefined,
-        };
-      });
+        if (items.length < limit) break;
+        offset += limit;
+      }
+
+      return allEvents;
     },
     staleTime: 1000 * 60 * 15,
   });
