@@ -51,6 +51,7 @@ export interface Venue {
   city: string;
   lat: number;
   lng: number;
+  hasMusic: boolean;
 }
 
 export interface Event {
@@ -91,6 +92,14 @@ function mapVenueType(vt: string): VenueType {
   return map[vt] ?? "venue";
 }
 
+const MUSIC_VENUE_TYPES = new Set([
+  "live_music_venue", "concert_hall", "music_venue", "jazz_club",
+]);
+
+function isMusical(venueType: string, vibeTags: string[]): boolean {
+  return MUSIC_VENUE_TYPES.has(venueType) || vibeTags.includes("live_music");
+}
+
 let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
 
@@ -116,6 +125,7 @@ export const useVenues = () => {
           city: v.city ?? "",
           lat,
           lng,
+          hasMusic: isMusical(v.venueType ?? "", v.vibeTags ?? []),
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
@@ -158,6 +168,7 @@ export const useEvents = () => {
           city: e.city ?? "",
           lat: 0,
           lng: 0,
+          hasMusic: false,
         };
 
         events.push({
