@@ -146,12 +146,15 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
         </div>
 
         {/* Date filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
-          {DATE_FILTERS.map((df) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1 items-center">
+          {DATE_CHIPS.map((df) => (
             <motion.button
               key={df.key}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedDate(df.key)}
+              onClick={() => {
+                setSelectedDate(df.key);
+                setCustomDate(undefined);
+              }}
               className={`shrink-0 px-3 py-1.5 rounded-inner text-xs font-mono uppercase tracking-widest transition-colors duration-150 ${
                 selectedDate === df.key
                   ? "bg-primary text-primary-foreground"
@@ -161,6 +164,40 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               {df.label}
             </motion.button>
           ))}
+
+          {/* Calendar picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                className={`shrink-0 w-8 h-8 rounded-inner flex items-center justify-center transition-colors duration-150 ${
+                  selectedDate === "custom"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                <CalendarSearch className="w-4 h-4" />
+              </motion.button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={customDate}
+                onSelect={(date) => {
+                  setCustomDate(date);
+                  if (date) setSelectedDate("custom");
+                }}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {selectedDate === "custom" && customDate && (
+            <span className="shrink-0 text-[10px] font-mono text-primary">
+              {format(customDate, "MMM d")}
+            </span>
+          )}
         </div>
 
         {/* Genre filters */}
