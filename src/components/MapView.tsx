@@ -69,17 +69,13 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
     }
   }, [userLocation]);
 
+  // Initialize map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const defaultCenter: [number, number] = userLocation
-      ? [userLocation.lat, userLocation.lng]
-      : [35.7796, -78.6382];
-    const defaultZoom = userLocation ? 13 : 11;
-
     const map = L.map(containerRef.current, {
-      center: defaultCenter,
-      zoom: defaultZoom,
+      center: [35.7796, -78.6382],
+      zoom: 11,
       zoomControl: false,
       attributionControl: false,
     });
@@ -113,9 +109,10 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
       resizeObserverRef.current = null;
       map.remove();
       mapRef.current = null;
+      userMarkerRef.current = null;
       markersRef.current = {};
     };
-  }, [userLocation]);
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current) return;
