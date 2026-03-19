@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-bands" element={<MyBands />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/insights" element={<Insights />} />
             <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
