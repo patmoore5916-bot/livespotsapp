@@ -13,6 +13,7 @@ import Install from "./pages/Install.tsx";
 import Profile from "./pages/Profile.tsx";
 import MyBands from "./pages/MyBands.tsx";
 import Insights from "./pages/Insights.tsx";
+import Social from "./pages/Social.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/social" element={<Social />} />
             <Route path="/my-bands" element={<MyBands />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/insights" element={<Insights />} />
