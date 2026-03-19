@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ChevronDown, CalendarSearch } from "lucide-react";
+import { ChevronDown, ChevronUp, CalendarSearch } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
@@ -124,26 +124,35 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       animate={{ height: `${currentHeight * 100}vh` }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      {/* Drag handle */}
-      <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0}
-        onDragEnd={handleDragEnd}
-        className="cursor-grab active:cursor-grabbing pt-2 pb-3 px-6 touch-none"
+      {/* Tap handle — replaces drag */}
+      <button
+        onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+        className="w-full pt-2 pb-3 px-6"
       >
         <div className="w-12 h-1.5 rounded-full bg-muted-foreground/40 mx-auto" />
-      </motion.div>
+      </button>
 
       {/* Header */}
       <div className="px-5 pb-3">
-        <div className="flex items-baseline justify-between mb-3">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold tracking-tight text-foreground">
             {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
           </h2>
-          <span className="font-mono-nums text-xs text-muted-foreground">
-            {filteredEvents.length} shows
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono-nums text-xs text-muted-foreground">
+              {filteredEvents.length} shows
+            </span>
+            <button
+              onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+              className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center"
+            >
+              {snapPoint >= 2 ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Date filters */}
@@ -242,19 +251,6 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
           ))
         )}
       </div>
-
-      {/* Collapse button — sits above BottomNav */}
-      {snapPoint > 0 && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          onClick={() => onSnapChange(0)}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 w-11 h-11 rounded-full bg-card border border-border shadow-card flex items-center justify-center"
-        >
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        </motion.button>
-      )}
     </motion.div>
   );
 };
