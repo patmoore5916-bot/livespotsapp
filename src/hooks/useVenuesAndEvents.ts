@@ -92,6 +92,14 @@ function mapVenueType(vt: string): VenueType {
   return map[vt] ?? "venue";
 }
 
+const MUSIC_VENUE_TYPES = new Set([
+  "live_music_venue", "concert_hall", "music_venue", "jazz_club",
+]);
+
+function isMusical(venueType: string, vibeTags: string[]): boolean {
+  return MUSIC_VENUE_TYPES.has(venueType) || vibeTags.includes("live_music");
+}
+
 let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
 
