@@ -150,8 +150,12 @@ export const useVenues = () => {
 };
 
 export const useEvents = () => {
+  // Ensure venue cache is populated before fetching events
+  const { data: venuesData } = useVenues();
+
   return useQuery({
     queryKey: ["events", "manus-v3"],
+    enabled: !!venuesData && venuesData.length > 0,
     queryFn: async (): Promise<Event[]> => {
       const raw = await fetchAllPages("events");
       const events: Event[] = [];
