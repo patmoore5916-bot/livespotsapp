@@ -51,6 +51,7 @@ export interface Venue {
   city: string;
   lat: number;
   lng: number;
+  hasMusic: boolean;
 }
 
 export interface Event {
