@@ -168,6 +168,7 @@ export const useEvents = () => {
           city: e.city ?? "",
           lat: 0,
           lng: 0,
+          hasMusic: false,
         };
 
         events.push({
