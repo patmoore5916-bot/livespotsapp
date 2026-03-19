@@ -10,6 +10,8 @@ import Onboarding from "./pages/Onboarding.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Admin from "./pages/Admin.tsx";
 import Install from "./pages/Install.tsx";
+import Profile from "./pages/Profile.tsx";
+import MyBands from "./pages/MyBands.tsx";
 
 const queryClient = new QueryClient();
 
