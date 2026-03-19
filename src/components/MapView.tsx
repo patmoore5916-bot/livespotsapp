@@ -54,9 +54,15 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation 
       } else {
         const userIcon = L.divIcon({
           className: "custom-pin",
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
-          html: `<div style="width:12px;height:12px;border-radius:50%;background:hsl(210,100%,60%);border:3px solid white;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+          html: `
+            <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
+              <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(0,122,255,0.15);animation:ping 2.5s ease-out infinite;"></div>
+              <div style="position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(0,122,255,0.2);"></div>
+              <div style="width:14px;height:14px;border-radius:50%;background:#007AFF;border:3px solid white;box-shadow:0 0 8px rgba(0,122,255,0.6);position:relative;z-index:2;"></div>
+            </div>
+          `,
         });
         userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(mapRef.current);
       }
