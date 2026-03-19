@@ -11,7 +11,7 @@ interface FilterChipsProps {
 
 const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive, showForYou = false }: FilterChipsProps) => {
   return (
-    <div className="flex gap-2 flex-wrap pb-1 px-1">
+    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onToggleLive}
