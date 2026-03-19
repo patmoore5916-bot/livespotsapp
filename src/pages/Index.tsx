@@ -21,8 +21,8 @@ const Index = () => {
   const { data: allVenues = [] } = useVenues();
   const { data: allEvents = [] } = useEvents();
 
-  const MAP_RADIUS = 10;
-  const LIST_RADIUS = 30;
+  const MAP_RADIUS = 30;
+  const LIST_RADIUS = 60;
 
   const mapVenues = useMemo(() => {
     if (!location) return allVenues;
