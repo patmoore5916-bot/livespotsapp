@@ -113,6 +113,7 @@ export const useVenues = () => {
       const raw = await fetchAllPages("venues");
       venueCache = new Map();
       venueNameIndex = new Map();
+      venueNamesList = [];
 
       const venues: Venue[] = [];
       for (const v of raw) {
@@ -130,14 +131,14 @@ export const useVenues = () => {
           lat,
           lng,
           hasMusic: hasMusicType,
-          musicScore: hasMusicType ? 0.7 : 0, // base score from type, events will boost later
+          musicScore: hasMusicType ? 0.7 : 0,
         };
         venues.push(venue);
         venueCache.set(String(v.id), venue);
-        // Index by normalized name for fuzzy matching
         const key = v.name?.toLowerCase().trim();
-        if (key && !venueNameIndex.has(key)) {
-          venueNameIndex.set(key, venue);
+        if (key) {
+          if (!venueNameIndex.has(key)) venueNameIndex.set(key, venue);
+          venueNamesList.push({ key, venue });
         }
       }
 
