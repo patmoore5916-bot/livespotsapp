@@ -14,6 +14,7 @@ import Profile from "./pages/Profile.tsx";
 import MyBands from "./pages/MyBands.tsx";
 import Insights from "./pages/Insights.tsx";
 import Social from "./pages/Social.tsx";
+import SubmitShow from "./pages/SubmitShow.tsx";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/submit-show" element={<SubmitShow />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

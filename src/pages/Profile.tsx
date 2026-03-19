@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogOut, Sparkles, ChevronRight } from "lucide-react";
+import { LogOut, Sparkles, ChevronRight, PlusCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +147,14 @@ const Profile = () => {
           </motion.div>
         )}
 
-        {/* Sign out */}
+        <button
+          onClick={() => navigate("/submit-show")}
+          className="w-full flex items-center gap-3 bg-card rounded-card p-4 border border-border"
+        >
+          <PlusCircle className="w-5 h-5 text-primary" />
+          <span className="text-sm font-semibold text-foreground">Add a Show</span>
+        </button>
+
         <button
           onClick={async () => {
             await signOut();

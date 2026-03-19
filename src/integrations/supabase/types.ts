@@ -94,6 +94,51 @@ export type Database = {
         }
         Relationships: []
       }
+      show_submissions: {
+        Row: {
+          artist: string
+          city: string
+          created_at: string
+          event_date: string
+          genre: string
+          id: string
+          notes: string | null
+          start_time: string
+          status: string
+          ticket_url: string | null
+          user_id: string
+          venue_name: string
+        }
+        Insert: {
+          artist: string
+          city?: string
+          created_at?: string
+          event_date: string
+          genre?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          status?: string
+          ticket_url?: string | null
+          user_id: string
+          venue_name: string
+        }
+        Update: {
+          artist?: string
+          city?: string
+          created_at?: string
+          event_date?: string
+          genre?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          status?: string
+          ticket_url?: string | null
+          user_id?: string
+          venue_name?: string
+        }
+        Relationships: []
+      }
       sync_logs: {
         Row: {
           error_message: string | null
