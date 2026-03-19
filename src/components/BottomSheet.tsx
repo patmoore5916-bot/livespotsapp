@@ -169,7 +169,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
             <PopoverTrigger asChild>
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                className={`shrink-0 w-8 h-8 rounded-inner flex items-center justify-center transition-colors duration-150 ${
+                className={`shrink-0 w-7 h-7 rounded-inner flex items-center justify-center transition-colors duration-150 ${
                   selectedDate === "custom"
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
