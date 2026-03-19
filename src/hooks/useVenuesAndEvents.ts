@@ -144,7 +144,13 @@ export const useEvents = () => {
         if (!e.eventDate) continue;
 
         const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-        const venue: Venue = venueFromCache ?? {
+        // If no venueId match, try matching by venue name
+        const venueByName = !venueFromCache && e.venueName
+          ? venueNameIndex.get(e.venueName.toLowerCase().trim())
+          : undefined;
+        const matchedVenue = venueFromCache ?? venueByName;
+
+        const venue: Venue = matchedVenue ?? {
           id: String(e.venueId ?? e.id),
           name: e.venueName ?? "Unknown Venue",
           type: "venue",
