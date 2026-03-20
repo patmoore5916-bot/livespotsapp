@@ -149,16 +149,6 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       >
         <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 mb-1" />
       </button>
-      <button
-        onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
-        className="absolute top-1 right-4 w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
-      >
-        {snapPoint === 1 ? (
-          <ChevronDown className="w-6 h-6 text-foreground" />
-        ) : (
-          <ChevronUp className="w-6 h-6 text-foreground" />
-        )}
-      </button>
 
       {/* Header */}
       <div className="px-5 pb-3">
