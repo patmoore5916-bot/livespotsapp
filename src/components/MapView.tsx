@@ -181,7 +181,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
 
     const map = L.map(containerRef.current, {
       center: [35.7796, -78.6382],
-      zoom: 11,
+      zoom: 14,
       zoomControl: false,
       attributionControl: false,
     });
