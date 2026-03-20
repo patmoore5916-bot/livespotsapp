@@ -70,11 +70,11 @@
 
 /* Leaflet overrides — Google Maps night-mode style */
 .leaflet-container {
-  background: #1a1a2e !important;
+  background: #0a0a14 !important;
 }
 
 .google-night-tiles {
-  filter: brightness(1.15) saturate(1.4) hue-rotate(200deg) invert(1) brightness(0.55) contrast(1.15) hue-rotate(160deg);
+  filter: brightness(0.9) saturate(1.6) hue-rotate(200deg) invert(1) brightness(0.4) contrast(1.3) hue-rotate(160deg);
 }
 
 .custom-pin {
