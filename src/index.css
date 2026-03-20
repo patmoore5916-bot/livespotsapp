@@ -15,7 +15,7 @@
     --popover: 240 4% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 22 100% 50%;
+    --primary: 220 80% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 4% 16%;
@@ -32,21 +32,21 @@
 
     --border: 0 0% 100% / 0.08;
     --input: 240 4% 16%;
-    --ring: 22 100% 50%;
+    --ring: 220 80% 50%;
 
     --radius: 1rem;
 
     --sidebar-background: 240 6% 4%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 22 100% 50%;
+    --sidebar-primary: 220 80% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4% 16%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 100% / 0.08;
-    --sidebar-ring: 22 100% 50%;
+    --sidebar-ring: 220 80% 50%;
 
     --shadow-card: 0 0 0 1px rgba(255,255,255,0.05), 0 8px 16px -4px rgba(0,0,0,0.4), 0 4px 8px -2px rgba(0,0,0,0.3);
-    --shadow-pin: 0 0 12px 4px rgba(255,92,0,0.3);
+    --shadow-pin: 0 0 12px 4px rgba(37,99,235,0.3);
   }
 }
 

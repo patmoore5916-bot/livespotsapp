@@ -113,7 +113,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
             <div style="font-size:9px;color:#a1a1aa;">${ev.genre} · ${time} · ${ev.date}</div>
           </div>`;
         }).join("");
-        const moreLabel = venueEvents.length > 3 ? `<div style="font-size:9px;color:#FF5C00;margin-top:2px;">+${venueEvents.length - 3} more</div>` : "";
+        const moreLabel = venueEvents.length > 3 ? `<div style="font-size:9px;color:#2563EB;margin-top:2px;">+${venueEvents.length - 3} more</div>` : "";
         eventsHtml = `<div style="margin-top:6px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;">
           <div style="font-size:9px;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Upcoming</div>
           ${eventItems}${moreLabel}
