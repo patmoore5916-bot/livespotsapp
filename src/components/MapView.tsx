@@ -87,7 +87,10 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
 
       const marker = L.marker([venue.lat, venue.lng], { icon })
         .addTo(map)
-        .on("click", () => onVenueSelect(venue.id));
+        .on("click", () => {
+          onVenueSelect(venue.id);
+          marker.openPopup();
+        });
 
       // Build rich popup with venue info + events
       const venueEvents = events.filter((e) => e.venue.id === venue.id);
