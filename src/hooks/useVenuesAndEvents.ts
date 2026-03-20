@@ -156,9 +156,6 @@ export const useVenues = () => {
     queryKey: ["venues", "manus-v3"],
     queryFn: async (): Promise<Venue[]> => {
       const raw = await fetchAllPages("venues");
-      venueCache = new Map();
-      venueNameIndex = new Map();
-      venueNamesList = [];
 
       const venues: Venue[] = [];
       for (const v of raw) {
@@ -167,7 +164,7 @@ export const useVenues = () => {
         if (!lat || !lng) continue;
 
         const hasMusicType = isMusical(v.venueType ?? "", v.vibeTags ?? []);
-        const venue: Venue = {
+        venues.push({
           id: String(v.id),
           name: v.name,
           type: mapVenueType(v.venueType ?? ""),
@@ -177,19 +174,17 @@ export const useVenues = () => {
           lng,
           hasMusic: hasMusicType,
           musicScore: hasMusicType ? 0.7 : 0,
-        };
-        venues.push(venue);
-        venueCache.set(String(v.id), venue);
-        const key = v.name?.toLowerCase().trim();
-        if (key) {
-          if (!venueNameIndex.has(key)) venueNameIndex.set(key, venue);
-          venueNamesList.push({ key, venue });
-        }
+        });
       }
 
+      hydrateVenueIndex(venues);
+      writeCache(LS_VENUES_KEY, LS_VENUES_TS, venues);
       return venues;
     },
-    staleTime: 1000 * 60 * 10,
+    // Serve cached LS data instantly while refetching in background
+    placeholderData: cachedVenues ?? keepPreviousData,
+    staleTime: 1000 * 60 * 60, // 1 hour before considered stale
+    gcTime: 1000 * 60 * 60 * 24, // keep in memory 24h
     retry: 2,
   });
 };
