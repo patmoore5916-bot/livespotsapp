@@ -58,6 +58,10 @@ interface BottomSheetProps {
   userGenres?: string[];
   searchQuery?: string;
   userLocation?: { lat: number; lng: number } | null;
+  /** Name of the currently selected venue (when filtering to one venue) */
+  selectedVenueName?: string | null;
+  /** Clear the venue filter and return to the full list */
+  onClearVenue?: () => void;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.78];
