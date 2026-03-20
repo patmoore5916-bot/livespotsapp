@@ -106,6 +106,51 @@ let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
 let venueNamesList: { key: string; venue: Venue }[] = [];
 
+// --- LocalStorage persistence helpers ---
+const LS_VENUES_KEY = "livespots_venues_v1";
+const LS_EVENTS_KEY = "livespots_events_v1";
+const LS_VENUES_TS = "livespots_venues_ts";
+const LS_EVENTS_TS = "livespots_events_ts";
+const VENUE_CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
+const EVENT_CACHE_TTL = 1000 * 60 * 60 * 2; // 2 hours
+
+function readCache<T>(key: string, tsKey: string, ttl: number): T | undefined {
+  try {
+    const ts = localStorage.getItem(tsKey);
+    if (!ts || Date.now() - Number(ts) > ttl) return undefined;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCache(key: string, tsKey: string, data: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(tsKey, String(Date.now()));
+  } catch { /* storage full — non-critical */ }
+}
+
+// Hydrate venueCache from localStorage on module load
+function hydrateVenueIndex(venues: Venue[]) {
+  venueCache = new Map();
+  venueNameIndex = new Map();
+  venueNamesList = [];
+  for (const venue of venues) {
+    venueCache.set(venue.id, venue);
+    const key = venue.name?.toLowerCase().trim();
+    if (key) {
+      if (!venueNameIndex.has(key)) venueNameIndex.set(key, venue);
+      venueNamesList.push({ key, venue });
+    }
+  }
+}
+
+// Try to hydrate from LS immediately so events can resolve venues even before fetch completes
+const cachedVenues = readCache<Venue[]>(LS_VENUES_KEY, LS_VENUES_TS, VENUE_CACHE_TTL);
+if (cachedVenues) hydrateVenueIndex(cachedVenues);
+
 export const useVenues = () => {
   return useQuery({
     queryKey: ["venues", "manus-v3"],
