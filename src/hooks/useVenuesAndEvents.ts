@@ -195,7 +195,7 @@ export const useEvents = () => {
 
   return useQuery({
     queryKey: ["events", "manus-v3"],
-    enabled: !!venuesData && venuesData.length > 0,
+    enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
       const raw = await fetchAllPages("events");
       const events: Event[] = [];
