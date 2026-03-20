@@ -43,7 +43,7 @@
     --sidebar-accent: 240 4% 16%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 100% / 0.08;
-    --sidebar-ring: 22 100% 50%;
+    --sidebar-ring: 220 80% 50%;
 
     --shadow-card: 0 0 0 1px rgba(255,255,255,0.05), 0 8px 16px -4px rgba(0,0,0,0.4), 0 4px 8px -2px rgba(0,0,0,0.3);
     --shadow-pin: 0 0 12px 4px rgba(255,92,0,0.3);
