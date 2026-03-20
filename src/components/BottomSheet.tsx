@@ -269,10 +269,22 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       >
         {filteredEvents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <p className="text-muted-foreground text-sm">No upcoming shows found.</p>
-            <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
-              Suggest a Show
-            </button>
+            <p className="text-muted-foreground text-sm">
+              {selectedVenueName ? "No upcoming shows at this venue." : "No upcoming shows found."}
+            </p>
+            {selectedVenueName && onClearVenue ? (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onClearVenue}
+                className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4"
+              >
+                ← Back to All Events
+              </motion.button>
+            ) : (
+              <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
+                Suggest a Show
+              </button>
+            )}
           </div>
         ) : (
           dateGroups.map((group) => (
