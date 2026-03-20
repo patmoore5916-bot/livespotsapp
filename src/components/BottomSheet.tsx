@@ -145,12 +145,18 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       {/* Tap handle with arrow: cycles 0→1→2→0 */}
       <button
         onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
-        className="w-full flex items-center justify-center pt-2 pb-2 px-6"
+        className="w-full flex items-center justify-center pt-3 pb-3 px-6"
+      >
+        <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 mb-1" />
+      </button>
+      <button
+        onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+        className="absolute top-1 right-4 w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
       >
         {snapPoint >= 2 ? (
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          <ChevronDown className="w-6 h-6 text-foreground" />
         ) : (
-          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          <ChevronUp className="w-6 h-6 text-foreground" />
         )}
       </button>
 
