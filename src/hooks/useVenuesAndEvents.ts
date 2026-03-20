@@ -254,6 +254,7 @@ export const useEvents = () => {
         });
       }
 
+      writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, events);
       return events;
     },
     staleTime: 1000 * 60 * 30, // 30 min
