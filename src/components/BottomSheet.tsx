@@ -83,7 +83,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
   return Array.from(groups.entries()).map(([label, events]) => ({ label, events }));
 }
 
-const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation, selectedVenueName, onClearVenue }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
