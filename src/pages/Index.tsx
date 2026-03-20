@@ -61,6 +61,14 @@ const Index = () => {
     setSheetSnap(1);
   };
 
+  const handleClearVenue = () => {
+    setSelectedVenueId(null);
+  };
+
+  const selectedVenueName = selectedVenueId
+    ? allVenues.find(v => v.id === selectedVenueId)?.name ?? null
+    : null;
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background pb-[60px]">
       {/* Loading indicator */}
