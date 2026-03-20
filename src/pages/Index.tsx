@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [sheetSnap, setSheetSnap] = useState(1);
+  const [sheetSnap, setSheetSnap] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
