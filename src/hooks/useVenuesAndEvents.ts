@@ -256,7 +256,9 @@ export const useEvents = () => {
 
       return events;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 30, // 30 min
+    gcTime: 1000 * 60 * 60 * 4, // 4h in memory
+    placeholderData: readCache<Event[]>(LS_EVENTS_KEY, LS_EVENTS_TS, EVENT_CACHE_TTL) ?? keepPreviousData,
     retry: 2,
   });
 };
