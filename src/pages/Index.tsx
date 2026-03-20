@@ -135,6 +135,8 @@ const Index = () => {
         userGenres={prefs?.genres}
         searchQuery={searchQuery}
         userLocation={location}
+        selectedVenueName={selectedVenueName}
+        onClearVenue={handleClearVenue}
       />
 
       <BottomNav />
