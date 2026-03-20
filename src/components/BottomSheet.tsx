@@ -130,7 +130,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
     const velocity = info.velocity.y;
     const offset = info.offset.y;
     if (velocity < -300 || offset < -80) {
-      onSnapChange(Math.min(snapPoint + 1, 2));
+      onSnapChange(Math.min(snapPoint + 1, 1));
     } else if (velocity > 300 || offset > 80) {
       onSnapChange(Math.max(snapPoint - 1, 0));
     }
