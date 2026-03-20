@@ -68,13 +68,13 @@
   }
 }
 
-/* Leaflet overrides */
+/* Leaflet overrides — Google Maps night-mode style */
 .leaflet-container {
-  background: #0e0e10 !important;
+  background: #1a1a2e !important;
 }
 
-.leaflet-tile {
-  /* no filter needed — dark_all tiles are natively dark */
+.google-night-tiles {
+  filter: brightness(1.15) saturate(1.4) hue-rotate(200deg) invert(1) brightness(0.55) contrast(1.15) hue-rotate(160deg);
 }
 
 .custom-pin {

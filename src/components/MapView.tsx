@@ -188,6 +188,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
+      className: "google-night-tiles",
     }).addTo(map);
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
