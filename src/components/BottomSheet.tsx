@@ -64,7 +64,7 @@ interface BottomSheetProps {
   onClearVenue?: () => void;
 }
 
-const SNAP_POINTS = [0.1, 0.45, 0.78];
+const SNAP_POINTS = [0.25, 0.78];
 
 /** Group events by date label */
 function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
@@ -130,7 +130,7 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
     const velocity = info.velocity.y;
     const offset = info.offset.y;
     if (velocity < -300 || offset < -80) {
-      onSnapChange(Math.min(snapPoint + 1, 2));
+      onSnapChange(Math.min(snapPoint + 1, 1));
     } else if (velocity > 300 || offset > 80) {
       onSnapChange(Math.max(snapPoint - 1, 0));
     }
@@ -142,18 +142,18 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       animate={{ height: `${currentHeight * 100}vh` }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      {/* Tap handle with arrow: cycles 0→1→2→0 */}
+      {/* Tap handle: toggles between 0 and 1 */}
       <button
-        onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+        onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
         className="w-full flex items-center justify-center pt-3 pb-3 px-6"
       >
         <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 mb-1" />
       </button>
       <button
-        onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+        onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
         className="absolute top-1 right-4 w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
       >
-        {snapPoint >= 2 ? (
+        {snapPoint === 1 ? (
           <ChevronDown className="w-6 h-6 text-foreground" />
         ) : (
           <ChevronUp className="w-6 h-6 text-foreground" />
@@ -190,10 +190,10 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
               {filteredEvents.length} shows
             </span>
             <button
-              onClick={() => onSnapChange(snapPoint >= 2 ? 0 : snapPoint + 1)}
+              onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
               className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
             >
-              {snapPoint >= 2 ? (
+              {snapPoint === 1 ? (
                 <ChevronDown className="w-5 h-5 text-foreground" />
               ) : (
                 <ChevronUp className="w-5 h-5 text-foreground" />

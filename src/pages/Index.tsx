@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [sheetSnap, setSheetSnap] = useState(1);
+  const [sheetSnap, setSheetSnap] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
@@ -97,7 +97,7 @@ const Index = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                if (e.target.value) setSheetSnap(2);
+                if (e.target.value) setSheetSnap(1);
               }}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full py-3"
             />
