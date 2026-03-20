@@ -97,7 +97,7 @@ const Index = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                if (e.target.value) setSheetSnap(2);
+                if (e.target.value) setSheetSnap(1);
               }}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full py-3"
             />
