@@ -157,9 +157,25 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       {/* Header */}
       <div className="px-5 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
-          </h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-xl font-bold tracking-tight text-foreground truncate">
+              {selectedVenueName
+                ? selectedVenueName
+                : q
+                  ? `Results for "${searchQuery}"`
+                  : `Upcoming near ${cityName}`}
+            </h2>
+            {selectedVenueName && onClearVenue && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClearVenue}
+                className="shrink-0 w-7 h-7 rounded-full bg-secondary flex items-center justify-center"
+                aria-label="Back to all events"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </motion.button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="font-mono-nums text-xs text-muted-foreground">
               {filteredEvents.length} shows
