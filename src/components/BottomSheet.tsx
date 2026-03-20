@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ChevronDown, ChevronUp, CalendarSearch } from "lucide-react";
+import { ChevronDown, ChevronUp, CalendarSearch, X } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
 import FilterChips from "./FilterChips";
@@ -58,6 +58,10 @@ interface BottomSheetProps {
   userGenres?: string[];
   searchQuery?: string;
   userLocation?: { lat: number; lng: number } | null;
+  /** Name of the currently selected venue (when filtering to one venue) */
+  selectedVenueName?: string | null;
+  /** Clear the venue filter and return to the full list */
+  onClearVenue?: () => void;
 }
 
 const SNAP_POINTS = [0.1, 0.45, 0.78];
@@ -79,7 +83,7 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
   return Array.from(groups.entries()).map(([label, events]) => ({ label, events }));
 }
 
-const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation }: BottomSheetProps) => {
+const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation, selectedVenueName, onClearVenue }: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
@@ -153,9 +157,25 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       {/* Header */}
       <div className="px-5 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
-          </h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-xl font-bold tracking-tight text-foreground truncate">
+              {selectedVenueName
+                ? selectedVenueName
+                : q
+                  ? `Results for "${searchQuery}"`
+                  : `Upcoming near ${cityName}`}
+            </h2>
+            {selectedVenueName && onClearVenue && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClearVenue}
+                className="shrink-0 w-7 h-7 rounded-full bg-secondary flex items-center justify-center"
+                aria-label="Back to all events"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </motion.button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="font-mono-nums text-xs text-muted-foreground">
               {filteredEvents.length} shows
@@ -249,10 +269,22 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
       >
         {filteredEvents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <p className="text-muted-foreground text-sm">No upcoming shows found.</p>
-            <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
-              Suggest a Show
-            </button>
+            <p className="text-muted-foreground text-sm">
+              {selectedVenueName ? "No upcoming shows at this venue." : "No upcoming shows found."}
+            </p>
+            {selectedVenueName && onClearVenue ? (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onClearVenue}
+                className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4"
+              >
+                ← Back to All Events
+              </motion.button>
+            ) : (
+              <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
+                Suggest a Show
+              </button>
+            )}
           </div>
         ) : (
           dateGroups.map((group) => (
