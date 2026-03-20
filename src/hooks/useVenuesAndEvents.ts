@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { isToday, isTomorrow } from "date-fns";
 
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
