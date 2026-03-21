@@ -119,6 +119,7 @@ const Index = () => {
         sheetSnap={sheetSnap}
         isLoading={isLoading}
         activeDateFilter={activeDateFilter}
+        flyToTrigger={flyToTrigger}
       />
 
       {/* Bottom Sheet */}
