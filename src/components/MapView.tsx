@@ -304,7 +304,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
   return (
     <>
       <div ref={containerRef} className="absolute inset-0 z-0" />
-      <div className="absolute bottom-24 left-4 z-20 bg-card/90 backdrop-blur-md rounded-inner p-2.5 shadow-card space-y-1.5">
+      <div className={`absolute left-4 z-20 bg-card/90 backdrop-blur-md rounded-inner p-2.5 shadow-card space-y-1.5 transition-all duration-300`} style={{ bottom: sheetSnap === 1 ? 'calc(78vh + 16px)' : 'calc(25vh + 16px)' }}>
         {(["live", "today", "this-week"] as const).map((status) => (
           <div key={status} className="flex items-center gap-2">
             <div
