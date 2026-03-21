@@ -1,7 +1,11 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { statusColors, type EventStatus, type Venue, type Event } from "@/hooks/useVenuesAndEvents";
+import { type DateFilter, matchesDateFilter } from "@/components/BottomSheet";
 
 interface MapViewProps {
   venues: Venue[];
@@ -9,104 +13,145 @@ interface MapViewProps {
   onVenueSelect: (venueId: string) => void;
   selectedVenueId: string | null;
   userLocation?: { lat: number; lng: number } | null;
-  /** Current bottom-sheet snap index so we can offset the map center */
   sheetSnap?: number;
+  isLoading?: boolean;
+  activeDateFilter?: DateFilter;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
   const venueEvents = events.filter((e) => e.venue.id === venueId);
   if (venueEvents.some((e) => e.status === "live")) return "live";
   if (venueEvents.some((e) => e.status === "today")) return "today";
+  if (venueEvents.some((e) => e.status === "tomorrow")) return "tomorrow";
   if (venueEvents.some((e) => e.status === "this-week")) return "this-week";
+  if (venueEvents.length > 0) return "upcoming";
   return null;
 };
 
-const BAR_COLOR = "#52525b";
-const MUSIC_VENUE_COLOR = "#A78BFA"; // violet-400
+/** Check if venue has events matching the active date filter */
+const venueMatchesDateFilter = (venueId: string, events: Event[], filter: DateFilter): boolean => {
+  if (filter === "all") return true;
+  return events.some((e) => e.venue.id === venueId && matchesDateFilter(e.date, filter));
+};
 
-const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: number, hasMusic: boolean) => {
+const BAR_COLOR = "#52525b";
+const MUSIC_VENUE_COLOR = "#A78BFA";
+const PLACEHOLDER_COLOR = "#3f3f46";
+
+const createPinIcon = (status: EventStatus | null, isSelected: boolean, zoom: number, hasMusic: boolean, dimmed: boolean) => {
   const isBar = !status;
-  // Scale event pins larger when zoomed out
   const zoomScale = zoom < 11 ? 1.4 : zoom < 13 ? 1.2 : 1;
   const baseSize = isSelected ? 20 : status === "live" ? 16 : status ? 14 : hasMusic ? 10 : 8;
   const size = Math.round(baseSize * (isBar ? 1 : zoomScale));
   const glowSize = size + (isBar ? 4 : 16);
 
   const barColor = hasMusic ? MUSIC_VENUE_COLOR : BAR_COLOR;
-  const colors = status ? statusColors[status] : { bg: barColor, glow: hasMusic ? "rgba(167,139,250,0.3)" : "transparent" };
+  const colors = status && status !== "upcoming"
+    ? statusColors[status]
+    : { bg: status === "upcoming" ? statusColors.upcoming.bg : barColor, glow: hasMusic ? "rgba(167,139,250,0.3)" : "transparent" };
+
+  const opacity = dimmed ? 0.2 : (isBar && !hasMusic ? 0.6 : 1);
 
   return L.divIcon({
     className: "custom-pin",
     iconSize: [glowSize, glowSize],
     iconAnchor: [glowSize / 2, glowSize / 2],
     html: `
-      <div style="position:relative;width:${glowSize}px;height:${glowSize}px;display:flex;align-items:center;justify-content:center;">
-        ${status === "live" ? `<div style="position:absolute;width:${glowSize}px;height:${glowSize}px;border-radius:50%;background:${colors.glow};animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ""}
-        ${status ? `<div style="position:absolute;width:${size + 8}px;height:${size + 8}px;border-radius:50%;background:${colors.glow};filter:blur(4px);"></div>` : ""}
-        <div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};border:${isBar ? "1px" : "2px"} solid ${isSelected ? "#fff" : isBar ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)"};box-shadow:0 0 ${status === "live" ? "12" : isBar && hasMusic ? "4" : isBar ? "0" : "6"}px ${colors.glow};position:relative;z-index:${status ? 2 : 1};opacity:${isBar && !hasMusic ? "0.6" : "1"};"></div>
+      <div style="position:relative;width:${glowSize}px;height:${glowSize}px;display:flex;align-items:center;justify-content:center;opacity:${opacity};">
+        ${status === "live" && !dimmed ? `<div style="position:absolute;width:${glowSize}px;height:${glowSize}px;border-radius:50%;background:${colors.glow};animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ""}
+        ${status && !dimmed ? `<div style="position:absolute;width:${size + 8}px;height:${size + 8}px;border-radius:50%;background:${colors.glow};filter:blur(4px);"></div>` : ""}
+        <div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};border:${isBar ? "1px" : "2px"} solid ${isSelected ? "#fff" : isBar ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)"};box-shadow:0 0 ${status === "live" ? "12" : isBar && hasMusic ? "4" : isBar ? "0" : "6"}px ${colors.glow};position:relative;z-index:${status ? 2 : 1};"></div>
       </div>
     `,
+  });
+};
+
+/** Create placeholder dots for loading state */
+const createPlaceholderIcon = () => {
+  return L.divIcon({
+    className: "custom-pin",
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+    html: `<div style="width:8px;height:8px;border-radius:50%;background:${PLACEHOLDER_COLOR};opacity:0.4;animation:pulse 2s ease-in-out infinite;"></div>`,
   });
 };
 
 const SNAP_HEIGHTS = [0.25, 0.78];
 const TOP_BAR_PX = 70;
 
-const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1 }: MapViewProps) => {
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1, isLoading = false, activeDateFilter = "all" }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<Record<string, L.Marker>>({});
+  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  const dataRef = useRef({ venues, events, selectedVenueId, onVenueSelect });
+  const dataRef = useRef({ venues, events, selectedVenueId, onVenueSelect, activeDateFilter });
 
-  // Keep data ref current
-  dataRef.current = { venues, events, selectedVenueId, onVenueSelect };
+  dataRef.current = { venues, events, selectedVenueId, onVenueSelect, activeDateFilter };
 
   const renderMarkers = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const { venues, events, selectedVenueId, onVenueSelect } = dataRef.current;
+    const { venues, events, selectedVenueId, onVenueSelect, activeDateFilter } = dataRef.current;
     const zoom = map.getZoom();
-    const hideBarsBelowZoom = 13; // Hide bar-only pins when zoomed out
+    const hideBarsBelowZoom = 13;
 
-    Object.values(markersRef.current).forEach((m) => m.remove());
-    markersRef.current = {};
+    // Clear existing cluster group
+    if (clusterGroupRef.current) {
+      clusterGroupRef.current.clearLayers();
+    } else {
+      clusterGroupRef.current = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: (cluster) => {
+          const count = cluster.getChildCount();
+          const size = count > 20 ? 44 : count > 10 ? 38 : 32;
+          return L.divIcon({
+            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:hsl(217 91% 60%);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;box-shadow:0 0 12px rgba(59,130,246,0.4);border:2px solid rgba(255,255,255,0.3);">${count}</div>`,
+            className: "custom-cluster",
+            iconSize: [size, size],
+          });
+        },
+      });
+      map.addLayer(clusterGroupRef.current);
+    }
+
+    const markers: L.Marker[] = [];
 
     venues.forEach((venue) => {
       const status = getVenueStatus(venue.id, events);
       const isBar = !status;
+      const matchesFilter = venueMatchesDateFilter(venue.id, events, activeDateFilter);
+      const dimmed = activeDateFilter !== "all" && !matchesFilter;
 
-      // Hide non-music bar-only venues when zoomed out; show music venues earlier
       if (isBar && !venue.hasMusic && zoom < hideBarsBelowZoom) return;
       if (isBar && venue.hasMusic && zoom < hideBarsBelowZoom - 2) return;
+      // Hide dimmed non-event venues entirely when filtered
+      if (dimmed && isBar) return;
 
       const isSelected = venue.id === selectedVenueId;
-      const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic);
+      const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic, dimmed);
 
       const marker = L.marker([venue.lat, venue.lng], { icon })
-        .addTo(map)
         .on("click", () => {
           onVenueSelect(venue.id);
           marker.openPopup();
         });
 
-      // Build rich popup with venue info + events
       const venueEvents = events.filter((e) => e.venue.id === venue.id);
       const typeLabel = venue.type === "bar" ? "Bar" : venue.type === "brewery" ? "Brewery" : venue.type === "club" ? "Club" : "Venue";
       const musicBadge = venue.hasMusic
         ? `<span style="background:rgba(167,139,250,0.2);color:#A78BFA;padding:1px 6px;border-radius:8px;font-size:9px;margin-left:4px;">♪ Music</span>`
         : "";
-      const scoreLine = venue.musicScore > 0
-        ? `<div style="font-size:9px;color:#a1a1aa;margin-top:2px;">Music likelihood: ${Math.round(venue.musicScore * 100)}%</div>`
-        : "";
 
       let eventsHtml = "";
       if (venueEvents.length > 0) {
         const eventItems = venueEvents.slice(0, 3).map((ev) => {
-          const statusStyle = statusColors[ev.status];
-          const dot = ev.status === "live" ? `<span style="color:${statusStyle.bg};">● </span>` : "";
+          const sColors = statusColors[ev.status] ?? statusColors.upcoming;
+          const dot = ev.status === "live" ? `<span style="color:${sColors.bg};">● </span>` : "";
           const time = ev.startTime || "TBA";
           return `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
             <div style="font-weight:600;font-size:11px;color:#fafafa;">${dot}${ev.artist}</div>
@@ -118,43 +163,36 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
           <div style="font-size:9px;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Upcoming</div>
           ${eventItems}${moreLabel}
         </div>`;
-      } else if (venue.hasMusic) {
-        eventsHtml = `<div style="margin-top:4px;font-size:9px;color:#71717a;">No events scheduled</div>`;
       }
 
-      const popupContent = `
+      marker.bindPopup(`
         <div style="font-family:'IBM Plex Sans',sans-serif;min-width:160px;max-width:220px;">
           <div style="font-weight:700;font-size:13px;color:#fafafa;line-height:1.3;">${venue.name}</div>
           <div style="font-size:10px;color:#a1a1aa;margin-top:1px;">${typeLabel}${venue.city ? ` · ${venue.city}` : ""}${musicBadge}</div>
-          ${scoreLine}
           ${eventsHtml}
         </div>
-      `;
-
-      marker.bindPopup(popupContent, {
+      `, {
         className: "venue-popup",
         closeButton: false,
         maxWidth: 240,
         minWidth: 160,
       });
 
-      markersRef.current[venue.id] = marker;
+      markers.push(marker);
     });
+
+    clusterGroupRef.current.addLayers(markers);
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !userLocation) return;
 
-    // Offset the map center so user dot sits between top bar and sheet
     const viewportH = window.innerHeight;
     const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
-    const visibleH = viewportH - sheetH - TOP_BAR_PX;
-    // Shift center upward by half the difference between bottom obstruction and top
     const offsetPx = (sheetH - TOP_BAR_PX) / 2;
     const targetZoom = map.getZoom() < 11 ? 13 : map.getZoom();
     const targetPoint = map.project([userLocation.lat, userLocation.lng], targetZoom);
-    // Move the point down in pixel space so that when rendered, dot appears higher
     const offsetPoint = L.point(targetPoint.x, targetPoint.y + offsetPx / 2);
     const offsetLatLng = map.unproject(offsetPoint, targetZoom);
     map.flyTo(offsetLatLng, targetZoom, { animate: true });
@@ -197,7 +235,6 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     L.control.zoom({ position: "bottomright" }).addTo(map);
     mapRef.current = map;
 
-    // Re-render markers on zoom change for size/visibility updates
     map.on("zoomend", renderMarkers);
 
     const invalidateMapSize = () => {
@@ -221,20 +258,23 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
       map.off("zoomend", renderMarkers);
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+      if (clusterGroupRef.current) {
+        map.removeLayer(clusterGroupRef.current);
+        clusterGroupRef.current = null;
+      }
       map.remove();
       mapRef.current = null;
       userMarkerRef.current = null;
-      markersRef.current = {};
     };
   }, [renderMarkers]);
 
-  // Re-render markers when data changes
+  // Re-render markers when data or filter changes
   useEffect(() => {
     renderMarkers();
     if (mapRef.current) {
       requestAnimationFrame(() => mapRef.current?.invalidateSize({ animate: false }));
     }
-  }, [venues, events, selectedVenueId, onVenueSelect, renderMarkers]);
+  }, [venues, events, selectedVenueId, onVenueSelect, activeDateFilter, renderMarkers]);
 
   return (
     <>

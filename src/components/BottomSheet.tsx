@@ -2,10 +2,12 @@ import { useRef, useState } from "react";
 import { ChevronDown, ChevronUp, CalendarSearch, X } from "lucide-react";
 import { motion, PanInfo } from "framer-motion";
 import EventCard from "./EventCard";
+import EventCardSkeleton from "./EventCardSkeleton";
 import FilterChips from "./FilterChips";
+import SuggestShowModal from "./SuggestShowModal";
 import { useGenres, type Event } from "@/hooks/useVenuesAndEvents";
 import { distanceMiles } from "@/lib/geo";
-import { format, parseISO, isToday, isTomorrow, isWithinInterval, addDays, isSameDay } from "date-fns";
+import { format, parseISO, isToday, isTomorrow, isWithinInterval, addDays, isSameDay, differenceInDays } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -21,8 +23,7 @@ const DATE_CHIPS: { key: Exclude<DateFilter, "custom">; label: string }[] = [
 
 function isThisWeekend(date: Date): boolean {
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun, 6=Sat
-  // Find upcoming Saturday (or today if Sat/Sun)
+  const dayOfWeek = now.getDay();
   const daysUntilSat = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
   const saturday = new Date(now);
   saturday.setHours(0, 0, 0, 0);
@@ -30,7 +31,6 @@ function isThisWeekend(date: Date): boolean {
   const sunday = addDays(saturday, 1);
   sunday.setHours(23, 59, 59, 999);
 
-  // If we're already on the weekend, include today
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
@@ -58,15 +58,15 @@ interface BottomSheetProps {
   userGenres?: string[];
   searchQuery?: string;
   userLocation?: { lat: number; lng: number } | null;
-  /** Name of the currently selected venue (when filtering to one venue) */
   selectedVenueName?: string | null;
-  /** Clear the venue filter and return to the full list */
   onClearVenue?: () => void;
+  isLoading?: boolean;
+  /** Expose current date filter to parent (for map sync) */
+  onDateFilterChange?: (filter: DateFilter) => void;
 }
 
 const SNAP_POINTS = [0.25, 0.78];
 
-/** Group events by date label */
 function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
   const groups = new Map<string, Event[]>();
   for (const e of events) {
@@ -83,19 +83,42 @@ function groupByDate(events: Event[]): { label: string; events: Event[] }[] {
   return Array.from(groups.entries()).map(([label, events]) => ({ label, events }));
 }
 
-const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", userGenres, searchQuery = "", userLocation, selectedVenueName, onClearVenue }: BottomSheetProps) => {
+const BottomSheet = ({
+  events,
+  snapPoint,
+  onSnapChange,
+  cityName = "Nearby",
+  userGenres,
+  searchQuery = "",
+  userLocation,
+  selectedVenueName,
+  onClearVenue,
+  isLoading = false,
+  onDateFilterChange,
+}: BottomSheetProps) => {
   const genres = useGenres();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<DateFilter>("all");
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const showForYou = !!userGenres && userGenres.length > 0;
 
+  const setDateFilter = (f: DateFilter) => {
+    setSelectedDate(f);
+    onDateFilterChange?.(f);
+  };
+
   const q = searchQuery.toLowerCase().trim();
+
+  // BUG 4: Reset date filter when searching
+  if (q && selectedDate !== "all") {
+    setDateFilter("all");
+    setCustomDate(undefined);
+  }
 
   const filteredEvents = events.filter((e) => {
     if (!matchesDateFilter(e.date, selectedDate, customDate)) return false;
-    const liveOnly = false; // kept for compatibility
     if (selectedGenre === "For You" && userGenres) {
       return userGenres.some((g) => e.genre.toLowerCase() === g.toLowerCase());
     }
@@ -110,7 +133,6 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
     return true;
   });
 
-  // Sort by distance to user if location available
   const sortedEvents = userLocation
     ? [...filteredEvents].sort((a, b) => {
         const aDist = a.venue.lat && a.venue.lng
@@ -137,171 +159,186 @@ const BottomSheet = ({ events, snapPoint, onSnapChange, cityName = "Nearby", use
   };
 
   return (
-    <motion.div
-      className="absolute bottom-0 left-0 right-0 z-20 bg-background rounded-t-card shadow-card"
-      animate={{ height: `${currentHeight * 100}vh` }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    >
-      {/* Tap handle: toggles between 0 and 1 */}
-      <button
-        onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
-        className="w-full flex items-center justify-center pt-3 pb-3 px-6"
+    <>
+      <motion.div
+        className="absolute bottom-0 left-0 right-0 z-20 bg-background rounded-t-card shadow-card"
+        animate={{ height: `${currentHeight * 100}vh` }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 mb-1" />
-      </button>
+        {/* Tap handle */}
+        <button
+          onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
+          className="w-full flex items-center justify-center pt-3 pb-3 px-6"
+        >
+          <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 mb-1" />
+        </button>
 
-      {/* Header */}
-      <div className="px-5 pb-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {selectedVenueName && onClearVenue ? (
-              <>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onClearVenue}
-                  className="shrink-0 flex items-center gap-1.5 bg-primary/15 text-primary rounded-full px-3 py-1.5"
-                  aria-label="Back to all events"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span className="text-xs font-semibold uppercase tracking-wide">All Events</span>
-                </motion.button>
-                <h2 className="text-xl font-bold tracking-tight text-foreground truncate">
-                  {selectedVenueName}
-                </h2>
-              </>
-            ) : (
-              <h2 className="text-xl font-bold tracking-tight text-foreground truncate">
-                {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
-              </h2>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono-nums text-xs text-muted-foreground">
-              {filteredEvents.length} shows
-            </span>
-            <button
-              onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
-              className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-            >
-              {snapPoint === 1 ? (
-                <ChevronDown className="w-7 h-7" />
+        {/* Header */}
+        <div className="px-5 pb-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {selectedVenueName && onClearVenue ? (
+                <>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onClearVenue}
+                    className="shrink-0 flex items-center gap-1.5 bg-primary/15 text-primary rounded-full px-3 py-1.5"
+                    aria-label="Back to all events"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span className="text-xs font-semibold uppercase tracking-wide">All</span>
+                  </motion.button>
+                  <h2 className="text-lg font-bold tracking-tight text-foreground truncate">
+                    Events at {selectedVenueName}
+                  </h2>
+                </>
               ) : (
-                <ChevronUp className="w-7 h-7" />
+                <h2 className="text-xl font-bold tracking-tight text-foreground truncate">
+                  {q ? `Results for "${searchQuery}"` : `Upcoming near ${cityName}`}
+                </h2>
               )}
-            </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono-nums text-xs text-muted-foreground">
+                {filteredEvents.length} shows
+              </span>
+              <button
+                onClick={() => onSnapChange(snapPoint === 0 ? 1 : 0)}
+                className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+              >
+                {snapPoint === 1 ? (
+                  <ChevronDown className="w-7 h-7" />
+                ) : (
+                  <ChevronUp className="w-7 h-7" />
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Date filters */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none items-center">
-          {DATE_CHIPS.map((df) => (
-            <motion.button
-              key={df.key}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setSelectedDate(df.key);
-                setCustomDate(undefined);
-              }}
-              className={`shrink-0 px-2.5 py-1 rounded-inner text-[10px] font-mono uppercase tracking-widest transition-colors duration-150 ${
-                selectedDate === df.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {df.label}
-            </motion.button>
-          ))}
-
-          {/* Calendar picker */}
-          <Popover>
-            <PopoverTrigger asChild>
+          {/* Date filters */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none items-center">
+            {DATE_CHIPS.map((df) => (
               <motion.button
+                key={df.key}
                 whileTap={{ scale: 0.95 }}
-                className={`shrink-0 w-7 h-7 rounded-inner flex items-center justify-center transition-colors duration-150 ${
-                  selectedDate === "custom"
+                onClick={() => {
+                  setDateFilter(df.key);
+                  setCustomDate(undefined);
+                }}
+                className={`shrink-0 px-2.5 py-1 rounded-inner text-[10px] font-mono uppercase tracking-widest transition-colors duration-150 ${
+                  selectedDate === df.key
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
                 }`}
               >
-                <CalendarSearch className="w-4 h-4" />
+                {df.label}
               </motion.button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={customDate}
-                onSelect={(date) => {
-                  setCustomDate(date);
-                  if (date) setSelectedDate("custom");
-                }}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
+            ))}
 
-          {selectedDate === "custom" && customDate && (
-            <span className="shrink-0 text-[10px] font-mono text-primary">
-              {format(customDate, "MMM d")}
-            </span>
-          )}
-        </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  className={`shrink-0 w-7 h-7 rounded-inner flex items-center justify-center transition-colors duration-150 ${
+                    selectedDate === "custom"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  <CalendarSearch className="w-4 h-4" />
+                </motion.button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={customDate}
+                  onSelect={(date) => {
+                    setCustomDate(date);
+                    if (date) setDateFilter("custom");
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
 
-        {/* Genre filters */}
-        <div className="mt-2">
-          <FilterChips
-            genres={genres}
-            selected={selectedGenre}
-            onSelect={setSelectedGenre}
-            liveOnly={false}
-            onToggleLive={() => {}}
-            showForYou={showForYou}
-          />
-        </div>
-      </div>
-
-      {/* Event list grouped by date */}
-      <div
-        ref={containerRef}
-        className="overflow-y-auto px-5 pb-28 space-y-4"
-        style={{ height: `calc(100% - 140px)` }}
-      >
-        {filteredEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <p className="text-muted-foreground text-sm">
-              {selectedVenueName ? "No upcoming shows at this venue." : "No upcoming shows found."}
-            </p>
-            {selectedVenueName && onClearVenue ? (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={onClearVenue}
-                className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4"
-              >
-                ← Back to All Events
-              </motion.button>
-            ) : (
-              <button className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4">
-                Suggest a Show
-              </button>
+            {selectedDate === "custom" && customDate && (
+              <span className="shrink-0 text-[10px] font-mono text-primary">
+                {format(customDate, "MMM d")}
+              </span>
             )}
           </div>
-        ) : (
-          dateGroups.map((group) => (
-            <div key={group.label}>
-              <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground/70 mb-2 sticky top-0 bg-background py-1 z-10">
-                {group.label}
-              </h3>
-              <div className="space-y-3">
-                {group.events.map((event, idx) => (
-                  <EventCard key={`${event.id}-${idx}`} event={event} userLocation={userLocation} />
-                ))}
-              </div>
+
+          {/* Genre filters */}
+          <div className="mt-2">
+            <FilterChips
+              genres={genres}
+              selected={selectedGenre}
+              onSelect={setSelectedGenre}
+              liveOnly={false}
+              onToggleLive={() => {}}
+              showForYou={showForYou}
+            />
+          </div>
+        </div>
+
+        {/* Event list */}
+        <div
+          ref={containerRef}
+          className="overflow-y-auto px-5 pb-28 space-y-4"
+          style={{ height: `calc(100% - 140px)` }}
+        >
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <EventCardSkeleton key={i} />
+              ))}
             </div>
-          ))
-        )}
-      </div>
-    </motion.div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <p className="text-muted-foreground text-sm">
+                {selectedVenueName ? `No upcoming shows at ${selectedVenueName}.` : "No upcoming shows found."}
+              </p>
+              {selectedVenueName && onClearVenue ? (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onClearVenue}
+                  className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4"
+                >
+                  ← Back to All Events
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSuggestOpen(true)}
+                  className="text-xs font-mono uppercase tracking-widest text-primary min-h-[44px] px-4"
+                >
+                  Suggest a Show
+                </motion.button>
+              )}
+            </div>
+          ) : (
+            dateGroups.map((group) => (
+              <div key={group.label}>
+                <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground/70 mb-2 sticky top-0 bg-background py-1 z-10">
+                  {group.label}
+                </h3>
+                <div className="space-y-3">
+                  {group.events.map((event, idx) => (
+                    <EventCard key={`${event.id}-${idx}`} event={event} userLocation={userLocation} />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
+
+      <SuggestShowModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
+    </>
   );
 };
 
 export default BottomSheet;
+
+export { matchesDateFilter, type DateFilter };
