@@ -60,7 +60,7 @@ const Index = () => {
   const handleRequestLocation = useCallback(() => {
     setLocating(true);
     requestLocation();
-    // Auto-clear after timeout
+    setFlyToTrigger(t => t + 1);
     setTimeout(() => setLocating(false), 5000);
   }, [requestLocation]);
 
