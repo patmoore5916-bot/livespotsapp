@@ -157,7 +157,10 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
       const isSelected = venue.id === selectedVenueId;
       const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic, dimmed);
 
-      const marker = L.marker([venue.lat, venue.lng], { icon })
+      const marker = L.marker([venue.lat, venue.lng], {
+        icon,
+        _venueStatus: status, // custom property for cluster color logic
+      } as any)
         .on("click", () => {
           onVenueSelect(venue.id);
           marker.openPopup();
