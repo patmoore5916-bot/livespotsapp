@@ -254,7 +254,22 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     }
   }, [userLocation]);
 
-  // Initialize map once
+  // Fly to user location when location button is tapped
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLocation || flyToTrigger === 0) return;
+
+    const viewportH = window.innerHeight;
+    const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
+    const offsetPx = (sheetH - TOP_BAR_PX) / 2;
+    const targetZoom = map.getZoom() < 11 ? 13 : map.getZoom();
+    const targetPoint = map.project([userLocation.lat, userLocation.lng], targetZoom);
+    const offsetPoint = L.point(targetPoint.x, targetPoint.y + offsetPx / 2);
+    const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+    map.flyTo(offsetLatLng, targetZoom, { animate: true });
+  }, [flyToTrigger]);
+
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
