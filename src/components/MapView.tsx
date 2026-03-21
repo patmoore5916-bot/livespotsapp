@@ -114,10 +114,11 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const greyCluster = { bg: "#52525b", glow: "rgba(82,82,91,0.25)" };
 
     clusterGroupRef.current = L.markerClusterGroup({
-      maxClusterRadius: 40,
+      maxClusterRadius: (zoom) => zoom >= 14 ? 0 : zoom >= 12 ? 20 : 40,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
       zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 15,
       iconCreateFunction: (cluster) => {
         const children = cluster.getAllChildMarkers();
         let bestStatus: string | null = null;
