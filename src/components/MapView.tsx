@@ -97,27 +97,49 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const zoom = map.getZoom();
     const hideBarsBelowZoom = 13;
 
-    // Clear existing cluster group
+    // Remove old cluster group entirely so iconCreateFunction picks up current events
     if (clusterGroupRef.current) {
-      clusterGroupRef.current.clearLayers();
-    } else {
-      clusterGroupRef.current = L.markerClusterGroup({
-        maxClusterRadius: 40,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        iconCreateFunction: (cluster) => {
-          const count = cluster.getChildCount();
-          const size = count > 20 ? 44 : count > 10 ? 38 : 32;
-          return L.divIcon({
-            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:hsl(217 91% 60%);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;box-shadow:0 0 12px rgba(59,130,246,0.4);border:2px solid rgba(255,255,255,0.3);">${count}</div>`,
-            className: "custom-cluster",
-            iconSize: [size, size],
-          });
-        },
-      });
-      map.addLayer(clusterGroupRef.current);
+      map.removeLayer(clusterGroupRef.current);
+      clusterGroupRef.current = null;
     }
+
+    const statusPriority: Record<string, number> = { live: 3, today: 2, "this-week": 1, tomorrow: 1, upcoming: 0 };
+    const clusterColors: Record<string, { bg: string; glow: string }> = {
+      live: { bg: "#EF4444", glow: "rgba(239,68,68,0.5)" },
+      today: { bg: "#F59E0B", glow: "rgba(245,158,11,0.4)" },
+      "this-week": { bg: "#6366F1", glow: "rgba(99,102,241,0.35)" },
+      tomorrow: { bg: "#818CF8", glow: "rgba(129,140,248,0.35)" },
+      upcoming: { bg: "#64748B", glow: "rgba(100,116,139,0.25)" },
+    };
+    const greyCluster = { bg: "#52525b", glow: "rgba(82,82,91,0.25)" };
+
+    clusterGroupRef.current = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster) => {
+        const children = cluster.getAllChildMarkers();
+        let bestStatus: string | null = null;
+        let bestPriority = -1;
+        for (const child of children) {
+          const s = (child.options as any)._venueStatus as string | null;
+          if (s && (statusPriority[s] ?? 0) > bestPriority) {
+            bestPriority = statusPriority[s] ?? 0;
+            bestStatus = s;
+          }
+        }
+        const colors = bestStatus ? clusterColors[bestStatus] ?? greyCluster : greyCluster;
+        const count = cluster.getChildCount();
+        const size = count > 20 ? 44 : count > 10 ? 38 : 32;
+        return L.divIcon({
+          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${colors.bg};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;box-shadow:0 0 12px ${colors.glow};border:2px solid rgba(255,255,255,0.3);">${count}</div>`,
+          className: "custom-cluster",
+          iconSize: [size, size],
+        });
+      },
+    });
+    map.addLayer(clusterGroupRef.current);
 
     const markers: L.Marker[] = [];
 
