@@ -18,6 +18,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<DateFilter>("all");
   const [locating, setLocating] = useState(false);
+  const [flyToTrigger, setFlyToTrigger] = useState(0);
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
