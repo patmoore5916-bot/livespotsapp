@@ -3,6 +3,7 @@ import { MapPin, Clock, ExternalLink, Calendar, Navigation } from "lucide-react"
 import { statusColors, type Event } from "@/hooks/useVenuesAndEvents";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { distanceMiles } from "@/lib/geo";
+import { formatLabel } from "@/lib/formatters";
 
 interface EventCardProps {
   event: Event;
@@ -17,7 +18,6 @@ function formatEventDate(dateStr: string): string {
 }
 
 const EventCard = ({ event, userLocation }: EventCardProps) => {
-
   const hasCoords = event.venue.lat !== 0 && event.venue.lng !== 0;
   const dist =
     userLocation && hasCoords
@@ -25,6 +25,7 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
       : null;
 
   const locationLabel = event.venue.city || (hasCoords ? "Nearby" : "");
+  const statusStyle = statusColors[event.status] ?? statusColors["upcoming"];
 
   return (
     <motion.div
@@ -36,12 +37,12 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
           <div className="flex items-center gap-2">
             <span
               className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest font-medium"
-              style={{ color: statusColors[event.status].bg }}
+              style={{ color: statusStyle.bg }}
             >
               {event.status === "live" && (
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusColors[event.status].bg }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: statusStyle.bg }} />
               )}
-              {statusColors[event.status].label}
+              {event.statusLabel}
             </span>
           </div>
           <h3 className="text-lg font-bold text-foreground leading-tight tracking-tight truncate">
@@ -73,15 +74,21 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
             <Calendar className="w-3 h-3" />
             <span className="font-mono-nums">{formatEventDate(event.date)}</span>
           </span>
-          {event.startTime && (
+          {event.showTimes && event.showTimes.length > 1 ? (
+            <div className="space-y-0.5">
+              {event.showTimes.map((t, i) => (
+                <span key={i} className="block font-mono-nums text-xs text-muted-foreground">{t}</span>
+              ))}
+            </div>
+          ) : event.startTime ? (
             <span className="font-mono-nums text-xs text-muted-foreground">{event.startTime}</span>
-          )}
+          ) : null}
         </div>
       </div>
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
         <span className="text-[10px] font-mono uppercase tracking-widest text-accent-foreground/60 bg-accent px-2 py-1 rounded-inner">
-          {event.genre}
+          {formatLabel(event.genre)}
         </span>
         <div className="flex gap-2">
           {event.ticketUrl && (

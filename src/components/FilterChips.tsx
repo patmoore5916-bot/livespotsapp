@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { formatLabel } from "@/lib/formatters";
 
 interface FilterChipsProps {
   genres: string[];
@@ -52,7 +53,7 @@ const FilterChips = ({ genres, selected, onSelect, liveOnly, onToggleLive, showF
               : "bg-secondary text-muted-foreground"
           }`}
         >
-          {genre}
+          {formatLabel(genre)}
         </motion.button>
       ))}
     </div>

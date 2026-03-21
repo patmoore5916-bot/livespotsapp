@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import MapView from "@/components/MapView";
 import BottomNav from "@/components/BottomNav";
 import { distanceMiles } from "@/lib/geo";
-import BottomSheet from "@/components/BottomSheet";
+import BottomSheet, { type DateFilter } from "@/components/BottomSheet";
 import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
 import { useVenueProfiles } from "@/hooks/useVenueProfiles";
 import { useUserLocation } from "@/hooks/useUserLocation";
@@ -16,6 +16,8 @@ const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeDateFilter, setActiveDateFilter] = useState<DateFilter>("all");
+  const [locating, setLocating] = useState(false);
   const { location, cityName, requestLocation } = useUserLocation();
   const { data: prefs } = useUserPreferences();
 
@@ -23,7 +25,6 @@ const Index = () => {
   const { data: allEvents = [], isLoading: eventsLoading } = useEvents();
   const isLoading = venuesLoading || eventsLoading;
 
-  // Enrich venues with music frequency profiles
   const allVenues = useVenueProfiles(rawVenues, allEvents);
 
   const MAP_RADIUS = 30;
@@ -36,34 +37,36 @@ const Index = () => {
     );
   }, [allVenues, location]);
 
-  const listVenueIds = useMemo(() => {
-    if (!location) return new Set(allVenues.map((v) => v.id));
-    return new Set(
-      allVenues
-        .filter((v) => distanceMiles(location.lat, location.lng, v.lat, v.lng) <= LIST_RADIUS)
-        .map((v) => v.id)
-    );
-  }, [allVenues, location]);
-
   const mapEvents = useMemo(
     () => allEvents.filter((e) => e.venue.lat !== 0 && mapVenues.some((v) => v.id === e.venue.id)),
     [allEvents, mapVenues]
   );
 
-  // Show all events in the list — include events without a matched venue
-  const listEvents = useMemo(
-    () => allEvents,
-    [allEvents]
-  );
+  const listEvents = useMemo(() => allEvents, [allEvents]);
 
-  const handleVenueSelect = (venueId: string) => {
+  // BUG 3: When selecting from map, reset date filter to "all" so venue events always show
+  const handleVenueSelect = useCallback((venueId: string) => {
     setSelectedVenueId(venueId);
+    setActiveDateFilter("all");
     setSheetSnap(1);
-  };
+  }, []);
 
-  const handleClearVenue = () => {
+  const handleClearVenue = useCallback(() => {
     setSelectedVenueId(null);
-  };
+  }, []);
+
+  // UX 11: Location button with pulsing feedback
+  const handleRequestLocation = useCallback(() => {
+    setLocating(true);
+    requestLocation();
+    // Auto-clear after timeout
+    setTimeout(() => setLocating(false), 5000);
+  }, [requestLocation]);
+
+  // Clear locating state when location arrives
+  useMemo(() => {
+    if (location) setLocating(false);
+  }, [location]);
 
   const selectedVenueName = selectedVenueId
     ? allVenues.find(v => v.id === selectedVenueId)?.name ?? null
@@ -71,21 +74,6 @@ const Index = () => {
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background pb-[60px]">
-      {/* Loading indicator */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute top-16 right-4 z-40 flex items-center gap-2.5 bg-primary/90 backdrop-blur-md rounded-inner px-4 py-2.5 shadow-card"
-          >
-            <Loader2 className="w-6 h-6 text-primary-foreground animate-spin" />
-            <span className="text-sm font-semibold uppercase tracking-widest text-primary-foreground">Loading</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 z-30 p-4">
         <div className="flex items-center gap-3">
@@ -97,17 +85,24 @@ const Index = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                if (e.target.value) setSheetSnap(1);
+                if (e.target.value) {
+                  setSheetSnap(1);
+                  // BUG 4: auto-reset date filter on search
+                  setActiveDateFilter("all");
+                }
               }}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full py-3"
             />
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={requestLocation}
-            className="w-11 h-11 rounded-inner bg-primary shadow-card flex items-center justify-center"
+            onClick={handleRequestLocation}
+            className={`w-11 h-11 rounded-inner bg-primary shadow-card flex items-center justify-center relative ${locating ? "animate-pulse" : ""}`}
           >
-            <Navigation className="w-5 h-5 text-primary-foreground fill-primary-foreground" />
+            <Navigation className={`w-5 h-5 text-primary-foreground fill-primary-foreground ${locating ? "animate-spin" : ""}`} />
+            {locating && (
+              <span className="absolute inset-0 rounded-inner border-2 border-primary-foreground/40 animate-ping" />
+            )}
           </motion.button>
           <HeaderAuth />
         </div>
@@ -121,6 +116,8 @@ const Index = () => {
         selectedVenueId={selectedVenueId}
         userLocation={location}
         sheetSnap={sheetSnap}
+        isLoading={isLoading}
+        activeDateFilter={activeDateFilter}
       />
 
       {/* Bottom Sheet */}
@@ -137,6 +134,8 @@ const Index = () => {
         userLocation={location}
         selectedVenueName={selectedVenueName}
         onClearVenue={handleClearVenue}
+        isLoading={isLoading}
+        onDateFilterChange={setActiveDateFilter}
       />
 
       <BottomNav />

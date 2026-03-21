@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { isToday, isTomorrow } from "date-fns";
+import { isToday, isTomorrow, differenceInDays, format, parseISO } from "date-fns";
+import { formatLabel, formatTime } from "@/lib/formatters";
 
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -21,7 +22,6 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
   return res.json();
 };
 
-/** Paginate through all pages from the frontend side */
 const fetchAllPages = async (endpoint: "venues" | "events"): Promise<any[]> => {
   const all: any[] = [];
   let offset = 0;
@@ -41,7 +41,7 @@ const fetchAllPages = async (endpoint: "venues" | "events"): Promise<any[]> => {
 };
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
-export type EventStatus = "live" | "today" | "this-week";
+export type EventStatus = "live" | "today" | "tomorrow" | "this-week" | "upcoming";
 
 export interface Venue {
   id: string;
@@ -52,7 +52,6 @@ export interface Venue {
   lat: number;
   lng: number;
   hasMusic: boolean;
-  /** 0–1 likelihood of live music based on event frequency + venue type */
   musicScore: number;
 }
 
@@ -64,21 +63,35 @@ export interface Event {
   date: string;
   doorsAt: string;
   startTime: string;
+  /** Multiple show times when duplicates are grouped */
+  showTimes?: string[];
   status: EventStatus;
+  /** Human-readable status label */
+  statusLabel: string;
   ticketUrl?: string;
 }
 
 export const statusColors = {
   live: { bg: "#EF4444", glow: "rgba(239,68,68,0.5)", label: "Live Now" },
   today: { bg: "#F59E0B", glow: "rgba(245,158,11,0.4)", label: "Today" },
+  tomorrow: { bg: "#818CF8", glow: "rgba(129,140,248,0.35)", label: "Tomorrow" },
   "this-week": { bg: "#6366F1", glow: "rgba(99,102,241,0.35)", label: "This Week" },
+  upcoming: { bg: "#64748B", glow: "rgba(100,116,139,0.25)", label: "Upcoming" },
 } as const;
 
-function deriveStatus(dateStr: string): EventStatus {
+function deriveStatus(dateStr: string): { status: EventStatus; label: string } {
   const d = new Date(`${dateStr}T00:00:00`);
-  if (isToday(d)) return "today";
-  if (isTomorrow(d)) return "today";
-  return "this-week";
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  if (isToday(d)) return { status: "today", label: "Today" };
+  if (isTomorrow(d)) return { status: "tomorrow", label: "Tomorrow" };
+
+  const days = differenceInDays(d, now);
+  if (days >= 0 && days <= 7) return { status: "this-week", label: "This Week" };
+
+  // Far future — show actual date
+  return { status: "upcoming", label: format(d, "MMM d") };
 }
 
 function mapVenueType(vt: string): VenueType {
@@ -106,13 +119,12 @@ let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
 let venueNamesList: { key: string; venue: Venue }[] = [];
 
-// --- LocalStorage persistence helpers ---
 const LS_VENUES_KEY = "livespots_venues_v1";
 const LS_EVENTS_KEY = "livespots_events_v1";
 const LS_VENUES_TS = "livespots_venues_ts";
 const LS_EVENTS_TS = "livespots_events_ts";
-const VENUE_CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
-const EVENT_CACHE_TTL = 1000 * 60 * 60 * 2; // 2 hours
+const VENUE_CACHE_TTL = 1000 * 60 * 60 * 24 * 7;
+const EVENT_CACHE_TTL = 1000 * 60 * 60 * 2;
 
 function readCache<T>(key: string, tsKey: string, ttl: number): T | undefined {
   try {
@@ -129,10 +141,9 @@ function writeCache(key: string, tsKey: string, data: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(data));
     localStorage.setItem(tsKey, String(Date.now()));
-  } catch { /* storage full — non-critical */ }
+  } catch { /* storage full */ }
 }
 
-// Hydrate venueCache from localStorage on module load
 function hydrateVenueIndex(venues: Venue[]) {
   venueCache = new Map();
   venueNameIndex = new Map();
@@ -147,7 +158,6 @@ function hydrateVenueIndex(venues: Venue[]) {
   }
 }
 
-// Try to hydrate from LS immediately so events can resolve venues even before fetch completes
 const cachedVenues = readCache<Venue[]>(LS_VENUES_KEY, LS_VENUES_TS, VENUE_CACHE_TTL);
 if (cachedVenues) hydrateVenueIndex(cachedVenues);
 
@@ -181,16 +191,14 @@ export const useVenues = () => {
       writeCache(LS_VENUES_KEY, LS_VENUES_TS, venues);
       return venues;
     },
-    // Serve cached LS data instantly while refetching in background
     placeholderData: cachedVenues ?? keepPreviousData,
-    staleTime: 1000 * 60 * 60, // 1 hour before considered stale
-    gcTime: 1000 * 60 * 60 * 24, // keep in memory 24h
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 24,
     retry: 2,
   });
 };
 
 export const useEvents = () => {
-  // Ensure venue cache is populated before fetching events
   const { data: venuesData } = useVenues();
 
   return useQuery({
@@ -198,18 +206,15 @@ export const useEvents = () => {
     enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
       const raw = await fetchAllPages("events");
-      const events: Event[] = [];
 
+      // First pass: build all events
+      const rawEvents: Event[] = [];
       for (const e of raw) {
         if (!e.eventDate) continue;
 
         const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-        // Try exact name match
         const nameKey = e.venueName?.toLowerCase().trim() ?? "";
-        const venueByName = !venueFromCache && nameKey
-          ? venueNameIndex.get(nameKey)
-          : undefined;
-        // Try substring match if exact fails
+        const venueByName = !venueFromCache && nameKey ? venueNameIndex.get(nameKey) : undefined;
         let venueBySubstring: Venue | undefined;
         if (!venueFromCache && !venueByName && nameKey.length > 3) {
           const match = venueNamesList.find(
@@ -219,7 +224,6 @@ export const useEvents = () => {
         }
         const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
 
-        // Use event's own lat/lng if available and venue wasn't matched
         const eventLat = parseFloat(e.lat) || 0;
         const eventLng = parseFloat(e.lng) || 0;
 
@@ -235,34 +239,66 @@ export const useEvents = () => {
           musicScore: 0,
         };
 
-        // Ensure city is populated — prefer venue's city, fallback to event-level city
         const venue: Venue = {
           ...baseVenue,
           city: baseVenue.city || e.city || "",
         };
 
-        events.push({
+        const { status, label } = deriveStatus(e.eventDate);
+        const rawGenre = e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other");
+
+        rawEvents.push({
           id: String(e.id),
           venue,
           artist: e.bandName ?? "TBA",
-          genre: e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"),
+          genre: formatLabel(rawGenre),
           date: e.eventDate,
-          doorsAt: "",
-          startTime: e.startTime ? e.startTime.slice(0, 5) : "",
-          status: deriveStatus(e.eventDate),
+          doorsAt: e.doorsAt ? formatTime(e.doorsAt.slice(0, 5)) : "",
+          startTime: e.startTime ? formatTime(e.startTime.slice(0, 5)) : "",
+          status,
+          statusLabel: label,
           ticketUrl: e.ticketUrl ?? undefined,
         });
       }
 
-      writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, events);
-      return events;
+      // BUG 7: Deduplicate — group same artist + venue + date into one card with multiple times
+      const deduped = deduplicateEvents(rawEvents);
+
+      writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, deduped);
+      return deduped;
     },
-    staleTime: 1000 * 60 * 30, // 30 min
-    gcTime: 1000 * 60 * 60 * 4, // 4h in memory
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60 * 4,
     placeholderData: readCache<Event[]>(LS_EVENTS_KEY, LS_EVENTS_TS, EVENT_CACHE_TTL) ?? keepPreviousData,
     retry: 2,
   });
 };
+
+/** Group duplicate events (same artist + venue + date) into single cards with multiple show times */
+function deduplicateEvents(events: Event[]): Event[] {
+  const groups = new Map<string, Event[]>();
+
+  for (const e of events) {
+    const key = `${e.artist.toLowerCase()}|${e.venue.id}|${e.date}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(e);
+  }
+
+  const result: Event[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
+      // Merge: keep first event, collect all unique times
+      const primary = { ...group[0] };
+      const times = [...new Set(group.map((e) => e.startTime).filter(Boolean))];
+      primary.showTimes = times.length > 1 ? times : undefined;
+      result.push(primary);
+    }
+  }
+
+  return result;
+}
 
 export const useGenres = () => {
   const { data: events } = useEvents();
