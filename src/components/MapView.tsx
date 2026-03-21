@@ -16,6 +16,7 @@ interface MapViewProps {
   sheetSnap?: number;
   isLoading?: boolean;
   activeDateFilter?: DateFilter;
+  flyToTrigger?: number;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
@@ -79,7 +80,7 @@ const createPlaceholderIcon = () => {
 const SNAP_HEIGHTS = [0.25, 0.78];
 const TOP_BAR_PX = 70;
 
-const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1, isLoading = false, activeDateFilter = "all" }: MapViewProps) => {
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1, isLoading = false, activeDateFilter = "all", flyToTrigger = 0 }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -210,9 +211,22 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     clusterGroupRef.current.addLayers(markers);
   }, []);
 
+  const hasFlownToUser = useRef(false);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !userLocation) return;
+
+    // Only fly to user location on the FIRST time it's received
+    if (hasFlownToUser.current) {
+      // Just update marker position silently
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      }
+      return;
+    }
+
+    hasFlownToUser.current = true;
 
     const viewportH = window.innerHeight;
     const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
@@ -223,9 +237,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const offsetLatLng = map.unproject(offsetPoint, targetZoom);
     map.flyTo(offsetLatLng, targetZoom, { animate: true });
 
-    if (userMarkerRef.current) {
-      userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-    } else {
+    if (!userMarkerRef.current) {
       const userIcon = L.divIcon({
         className: "custom-pin",
         iconSize: [40, 40],
@@ -240,9 +252,24 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
       });
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(map);
     }
-  }, [userLocation, sheetSnap]);
+  }, [userLocation]);
 
-  // Initialize map once
+  // Fly to user location when location button is tapped
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !userLocation || flyToTrigger === 0) return;
+
+    const viewportH = window.innerHeight;
+    const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
+    const offsetPx = (sheetH - TOP_BAR_PX) / 2;
+    const targetZoom = map.getZoom() < 11 ? 13 : map.getZoom();
+    const targetPoint = map.project([userLocation.lat, userLocation.lng], targetZoom);
+    const offsetPoint = L.point(targetPoint.x, targetPoint.y + offsetPx / 2);
+    const offsetLatLng = map.unproject(offsetPoint, targetZoom);
+    map.flyTo(offsetLatLng, targetZoom, { animate: true });
+  }, [flyToTrigger]);
+
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
