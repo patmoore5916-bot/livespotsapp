@@ -210,9 +210,22 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     clusterGroupRef.current.addLayers(markers);
   }, []);
 
+  const hasFlownToUser = useRef(false);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !userLocation) return;
+
+    // Only fly to user location on the FIRST time it's received
+    if (hasFlownToUser.current) {
+      // Just update marker position silently
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      }
+      return;
+    }
+
+    hasFlownToUser.current = true;
 
     const viewportH = window.innerHeight;
     const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
@@ -223,9 +236,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const offsetLatLng = map.unproject(offsetPoint, targetZoom);
     map.flyTo(offsetLatLng, targetZoom, { animate: true });
 
-    if (userMarkerRef.current) {
-      userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-    } else {
+    if (!userMarkerRef.current) {
       const userIcon = L.divIcon({
         className: "custom-pin",
         iconSize: [40, 40],
@@ -240,7 +251,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
       });
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon, interactive: false }).addTo(map);
     }
-  }, [userLocation, sheetSnap]);
+  }, [userLocation]);
 
   // Initialize map once
   useEffect(() => {
