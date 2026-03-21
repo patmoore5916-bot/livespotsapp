@@ -139,3 +139,23 @@
   border-top: none !important;
   border-left: none !important;
 }
+
+/* Hide default marker cluster styles for dark theme */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: transparent !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: transparent !important;
+}
+.custom-cluster {
+  background: transparent !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.15; }
+}
