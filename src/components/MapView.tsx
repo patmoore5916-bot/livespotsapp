@@ -16,6 +16,7 @@ interface MapViewProps {
   sheetSnap?: number;
   isLoading?: boolean;
   activeDateFilter?: DateFilter;
+  flyToTrigger?: number;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
