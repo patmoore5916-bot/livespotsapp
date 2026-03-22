@@ -192,8 +192,8 @@ export const useVenues = () => {
       return venues;
     },
     placeholderData: cachedVenues ?? keepPreviousData,
-    staleTime: 1000 * 60 * 60,
-    gcTime: 1000 * 60 * 60 * 24,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
     retry: 2,
   });
 };
