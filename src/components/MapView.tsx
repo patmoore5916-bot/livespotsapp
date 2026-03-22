@@ -292,7 +292,19 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     mapRef.current = map;
 
     map.on("zoomend", renderMarkers);
-
+    map.on("moveend", () => {
+      const center = map.getCenter();
+      const last = lastSearchCenter.current;
+      if (last) {
+        const dist = map.distance([center.lat, center.lng], [last.lat, last.lng]);
+        if (dist > 2000) setShowSearchArea(true);
+      } else if (userLocation) {
+        const dist = map.distance([center.lat, center.lng], [userLocation.lat, userLocation.lng]);
+        if (dist > 2000) setShowSearchArea(true);
+      } else {
+        setShowSearchArea(true);
+      }
+    });
     const invalidateMapSize = () => {
       map.invalidateSize({ animate: false });
     };
