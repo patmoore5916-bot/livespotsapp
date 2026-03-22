@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(0);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<DateFilter>("all");
   const [locating, setLocating] = useState(false);
