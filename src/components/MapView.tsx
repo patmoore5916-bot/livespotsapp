@@ -324,6 +324,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     return () => {
       window.removeEventListener("resize", scheduleInvalidate);
       map.off("zoomend", renderMarkers);
+      map.off("moveend");
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       if (clusterGroupRef.current) {
