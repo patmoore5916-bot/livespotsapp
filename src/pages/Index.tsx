@@ -62,10 +62,16 @@ const Index = () => {
   // UX 11: Location button with pulsing feedback
   const handleRequestLocation = useCallback(() => {
     setLocating(true);
+    setMapCenter(null); // Reset to user location
     requestLocation();
     setFlyToTrigger(t => t + 1);
     setTimeout(() => setLocating(false), 5000);
   }, [requestLocation]);
+
+  const handleSearchArea = useCallback((center: { lat: number; lng: number }) => {
+    setMapCenter(center);
+    setSelectedVenueId(null);
+  }, []);
 
   // Clear locating state when location arrives
   useMemo(() => {
