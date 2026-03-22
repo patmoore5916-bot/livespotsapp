@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const Index = () => {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sheetSnap, setSheetSnap] = useState(0);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDateFilter, setActiveDateFilter] = useState<DateFilter>("all");
   const [locating, setLocating] = useState(false);
@@ -31,12 +32,14 @@ const Index = () => {
   const MAP_RADIUS = 30;
   const LIST_RADIUS = 60;
 
+  const filterCenter = mapCenter || location;
+
   const mapVenues = useMemo(() => {
-    if (!location) return allVenues;
+    if (!filterCenter) return allVenues;
     return allVenues.filter(
-      (v) => distanceMiles(location.lat, location.lng, v.lat, v.lng) <= MAP_RADIUS
+      (v) => distanceMiles(filterCenter.lat, filterCenter.lng, v.lat, v.lng) <= MAP_RADIUS
     );
-  }, [allVenues, location]);
+  }, [allVenues, filterCenter]);
 
   const mapEvents = useMemo(
     () => allEvents.filter((e) => e.venue.lat !== 0 && mapVenues.some((v) => v.id === e.venue.id)),
@@ -59,10 +62,16 @@ const Index = () => {
   // UX 11: Location button with pulsing feedback
   const handleRequestLocation = useCallback(() => {
     setLocating(true);
+    setMapCenter(null); // Reset to user location
     requestLocation();
     setFlyToTrigger(t => t + 1);
     setTimeout(() => setLocating(false), 5000);
   }, [requestLocation]);
+
+  const handleSearchArea = useCallback((center: { lat: number; lng: number }) => {
+    setMapCenter(center);
+    setSelectedVenueId(null);
+  }, []);
 
   // Clear locating state when location arrives
   useMemo(() => {
@@ -120,6 +129,7 @@ const Index = () => {
         isLoading={isLoading}
         activeDateFilter={activeDateFilter}
         flyToTrigger={flyToTrigger}
+        onSearchArea={handleSearchArea}
       />
 
       {/* Bottom Sheet */}
