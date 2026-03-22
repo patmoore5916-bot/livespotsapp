@@ -81,8 +81,10 @@ const createPlaceholderIcon = () => {
 const SNAP_HEIGHTS = [0.25, 0.78];
 const TOP_BAR_PX = 70;
 
-const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1, isLoading = false, activeDateFilter = "all", flyToTrigger = 0 }: MapViewProps) => {
+const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation, sheetSnap = 1, isLoading = false, activeDateFilter = "all", flyToTrigger = 0, onSearchArea }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
+  const [showSearchArea, setShowSearchArea] = useState(false);
+  const lastSearchCenter = useRef<{ lat: number; lng: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
