@@ -224,8 +224,8 @@ export const useEvents = () => {
         }
         const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
 
-        const eventLat = parseFloat(e.lat) || 0;
-        const eventLng = parseFloat(e.lng) || 0;
+        const eventLat = parseFloat(e.lat ?? e.venue?.lat) || 0;
+        const eventLng = parseFloat(e.lng ?? e.venue?.lng) || 0;
 
         const baseVenue: Venue = matchedVenue ?? {
           id: String(e.venueId ?? e.id),
