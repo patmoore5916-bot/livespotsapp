@@ -17,6 +17,7 @@ interface MapViewProps {
   isLoading?: boolean;
   activeDateFilter?: DateFilter;
   flyToTrigger?: number;
+  onSearchArea?: (center: { lat: number; lng: number }) => void;
 }
 
 const getVenueStatus = (venueId: string, events: Event[]): EventStatus | null => {
