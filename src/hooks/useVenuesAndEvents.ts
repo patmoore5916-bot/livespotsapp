@@ -192,8 +192,8 @@ export const useVenues = () => {
       return venues;
     },
     placeholderData: cachedVenues ?? keepPreviousData,
-    staleTime: 1000 * 60 * 60,
-    gcTime: 1000 * 60 * 60 * 24,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
     retry: 2,
   });
 };
@@ -267,8 +267,8 @@ export const useEvents = () => {
       writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, deduped);
       return deduped;
     },
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60 * 4,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
     placeholderData: readCache<Event[]>(LS_EVENTS_KEY, LS_EVENTS_TS, EVENT_CACHE_TTL) ?? keepPreviousData,
     retry: 2,
   });
