@@ -32,12 +32,14 @@ const Index = () => {
   const MAP_RADIUS = 30;
   const LIST_RADIUS = 60;
 
+  const filterCenter = mapCenter || location;
+
   const mapVenues = useMemo(() => {
-    if (!location) return allVenues;
+    if (!filterCenter) return allVenues;
     return allVenues.filter(
-      (v) => distanceMiles(location.lat, location.lng, v.lat, v.lng) <= MAP_RADIUS
+      (v) => distanceMiles(filterCenter.lat, filterCenter.lng, v.lat, v.lng) <= MAP_RADIUS
     );
-  }, [allVenues, location]);
+  }, [allVenues, filterCenter]);
 
   const mapEvents = useMemo(
     () => allEvents.filter((e) => e.venue.lat !== 0 && mapVenues.some((v) => v.id === e.venue.id)),
