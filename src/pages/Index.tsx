@@ -129,6 +129,7 @@ const Index = () => {
         isLoading={isLoading}
         activeDateFilter={activeDateFilter}
         flyToTrigger={flyToTrigger}
+        onSearchArea={handleSearchArea}
       />
 
       {/* Bottom Sheet */}
