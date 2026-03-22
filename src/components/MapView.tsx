@@ -357,6 +357,15 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
   return (
     <>
       <div ref={containerRef} className="absolute inset-0 z-0" />
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute top-20 right-4 z-30 bg-card/90 backdrop-blur-md rounded-inner px-3 py-2 shadow-card flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Loading…</span>
+        </div>
+      )}
+
       {showSearchArea && onSearchArea && (
         <button
           onClick={handleSearchArea}
