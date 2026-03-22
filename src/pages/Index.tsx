@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import MapView from "@/components/MapView";
 import BottomNav from "@/components/BottomNav";
-import { distanceMiles } from "@/lib/geo";
+
 import BottomSheet, { type DateFilter } from "@/components/BottomSheet";
 import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
 import { useVenueProfiles } from "@/hooks/useVenueProfiles";
