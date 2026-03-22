@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import MapView from "@/components/MapView";
 import BottomNav from "@/components/BottomNav";
-import { distanceMiles } from "@/lib/geo";
+
 import BottomSheet, { type DateFilter } from "@/components/BottomSheet";
 import { useEvents, useVenues } from "@/hooks/useVenuesAndEvents";
 import { useVenueProfiles } from "@/hooks/useVenueProfiles";
@@ -29,21 +29,12 @@ const Index = () => {
 
   const allVenues = useVenueProfiles(rawVenues, allEvents);
 
-  const MAP_RADIUS = 30;
-  const LIST_RADIUS = 60;
-
-  const filterCenter = mapCenter || location;
-
-  const mapVenues = useMemo(() => {
-    if (!filterCenter) return allVenues;
-    return allVenues.filter(
-      (v) => distanceMiles(filterCenter.lat, filterCenter.lng, v.lat, v.lng) <= MAP_RADIUS
-    );
-  }, [allVenues, filterCenter]);
+  // No radius filter — show all venues/events on the map; let viewport handle visibility
+  const mapVenues = allVenues;
 
   const mapEvents = useMemo(
-    () => allEvents.filter((e) => e.venue.lat !== 0 && mapVenues.some((v) => v.id === e.venue.id)),
-    [allEvents, mapVenues]
+    () => allEvents.filter((e) => e.venue.lat !== 0),
+    [allEvents]
   );
 
   const listEvents = useMemo(() => allEvents, [allEvents]);
