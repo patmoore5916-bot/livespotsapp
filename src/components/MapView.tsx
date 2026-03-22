@@ -345,9 +345,27 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     }
   }, [venues, events, selectedVenueId, onVenueSelect, activeDateFilter, renderMarkers]);
 
+  const handleSearchArea = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !onSearchArea) return;
+    const center = map.getCenter();
+    lastSearchCenter.current = { lat: center.lat, lng: center.lng };
+    onSearchArea({ lat: center.lat, lng: center.lng });
+    setShowSearchArea(false);
+  }, [onSearchArea]);
+
   return (
     <>
       <div ref={containerRef} className="absolute inset-0 z-0" />
+      {showSearchArea && onSearchArea && (
+        <button
+          onClick={handleSearchArea}
+          className="absolute top-20 left-1/2 -translate-x-1/2 z-30 bg-primary text-primary-foreground px-4 py-2 rounded-inner text-xs font-semibold shadow-card backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-transform"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+          Search this area
+        </button>
+      )}
       <div className={`absolute left-4 z-20 bg-card/90 backdrop-blur-md rounded-inner p-2.5 shadow-card space-y-1.5 transition-all duration-300`} style={{ bottom: sheetSnap === 1 ? 'calc(78vh + 16px)' : 'calc(25vh + 16px)' }}>
         {(["live", "today", "this-week"] as const).map((status) => (
           <div key={status} className="flex items-center gap-2">
