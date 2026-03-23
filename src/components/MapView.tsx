@@ -230,6 +230,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     }
 
     hasFlownToUser.current = true;
+    try { localStorage.setItem("livespots_last_location", JSON.stringify({ lat: userLocation.lat, lng: userLocation.lng })); } catch {}
 
     const viewportH = window.innerHeight;
     const sheetH = viewportH * SNAP_HEIGHTS[sheetSnap];
