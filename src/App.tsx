@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/install" element={<Install />} />
             <Route path="/submit-show" element={<SubmitShow />} />
+            <Route path="/event/:eventId" element={<EventDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
