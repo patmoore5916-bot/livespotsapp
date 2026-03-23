@@ -17,6 +17,7 @@ import MyBands from "./pages/MyBands.tsx";
 import Insights from "./pages/Insights.tsx";
 import Social from "./pages/Social.tsx";
 import SubmitShow from "./pages/SubmitShow.tsx";
+import EventDetail from "./pages/EventDetail.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/install" element={<Install />} />
             <Route path="/submit-show" element={<SubmitShow />} />
+            <Route path="/event/:eventId" element={<EventDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

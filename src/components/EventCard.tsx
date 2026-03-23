@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
-import { MapPin, Clock, ExternalLink, Calendar, Navigation } from "lucide-react";
+import { MapPin, Clock, ExternalLink, Calendar, Navigation, Ticket } from "lucide-react";
 import { statusColors, type Event } from "@/hooks/useVenuesAndEvents";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { distanceMiles } from "@/lib/geo";
 import { formatLabel } from "@/lib/formatters";
+import { trackAndOpenTicket } from "@/lib/ticketTracking";
+import { useNavigate } from "react-router-dom";
 
 interface EventCardProps {
   event: Event;
@@ -18,6 +20,7 @@ function formatEventDate(dateStr: string): string {
 }
 
 const EventCard = ({ event, userLocation }: EventCardProps) => {
+  const navigate = useNavigate();
   const hasCoords = event.venue.lat !== 0 && event.venue.lng !== 0;
   const dist =
     userLocation && hasCoords
@@ -27,10 +30,22 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
   const locationLabel = event.venue.city || (hasCoords ? "Nearby" : "");
   const statusStyle = statusColors[event.status] ?? statusColors["upcoming"];
 
+  const handleTicketClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!event.ticketUrl) return;
+    trackAndOpenTicket({
+      eventId: event.id,
+      venueId: event.venue.id,
+      artist: event.artist,
+      ticketUrl: event.ticketUrl,
+    });
+  };
+
   return (
     <motion.div
       whileTap={{ scale: 0.97 }}
-      className="bg-card p-4 rounded-card shadow-card"
+      className="bg-card p-4 rounded-card shadow-card cursor-pointer"
+      onClick={() => navigate(`/event/${event.id}`)}
     >
       <div className="flex justify-between items-start gap-3">
         <div className="space-y-1.5 min-w-0 flex-1">
@@ -92,21 +107,21 @@ const EventCard = ({ event, userLocation }: EventCardProps) => {
         </span>
         <div className="flex gap-2">
           {event.ticketUrl && (
-            <a
-              href={event.ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={handleTicketClick}
               className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors min-h-[44px] px-3"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <Ticket className="w-3.5 h-3.5" />
               Tickets
-            </a>
+              <ExternalLink className="w-3 h-3 opacity-50" />
+            </button>
           )}
           {hasCoords && (
             <a
               href={`https://maps.google.com/maps?daddr=${event.venue.lat},${event.venue.lng}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-foreground/80 transition-colors min-h-[44px] px-3"
             >
               <Clock className="w-3.5 h-3.5" />
