@@ -276,9 +276,24 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    // Use last known location, or fall back to US center
+    const US_CENTER: [number, number] = [39.8283, -98.5795];
+    let initialCenter: [number, number] = US_CENTER;
+    let initialZoom = 4;
+    try {
+      const saved = localStorage.getItem("livespots_last_location");
+      if (saved) {
+        const { lat, lng } = JSON.parse(saved);
+        if (lat && lng) {
+          initialCenter = [lat, lng];
+          initialZoom = 13;
+        }
+      }
+    } catch {}
+
     const map = L.map(containerRef.current, {
-      center: [35.7796, -78.6382],
-      zoom: 14,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: false,
       attributionControl: false,
     });
