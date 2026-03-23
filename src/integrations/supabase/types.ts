@@ -172,6 +172,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_clicks: {
+        Row: {
+          artist: string
+          clicked_at: string
+          event_id: string
+          id: string
+          original_url: string
+          referrer: string | null
+          user_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          artist: string
+          clicked_at?: string
+          event_id: string
+          id?: string
+          original_url: string
+          referrer?: string | null
+          user_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          artist?: string
+          clicked_at?: string
+          event_id?: string
+          id?: string
+          original_url?: string
+          referrer?: string | null
+          user_id?: string | null
+          venue_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
