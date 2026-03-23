@@ -101,6 +101,9 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     const zoom = map.getZoom();
     const hideBarsBelowZoom = 13;
 
+    // Only render venues within the visible viewport (with padding)
+    const bounds = map.getBounds().pad(0.3);
+
     // Remove old cluster group entirely so iconCreateFunction picks up current events
     if (clusterGroupRef.current) {
       map.removeLayer(clusterGroupRef.current);
@@ -146,32 +149,48 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
     });
     map.addLayer(clusterGroupRef.current);
 
+    // Pre-index events by venue for O(1) lookup instead of O(n) filter per venue
+    const eventsByVenue = new Map<string, Event[]>();
+    for (const e of events) {
+      const list = eventsByVenue.get(e.venue.id);
+      if (list) list.push(e);
+      else eventsByVenue.set(e.venue.id, [e]);
+    }
+
     const markers: L.Marker[] = [];
 
-    venues.forEach((venue) => {
-      const status = getVenueStatus(venue.id, events);
+    for (const venue of venues) {
+      // Viewport culling — skip venues outside visible area
+      if (!bounds.contains([venue.lat, venue.lng])) continue;
+
+      const venueEvents = eventsByVenue.get(venue.id) ?? [];
+      const status = venueEvents.length === 0 ? null
+        : venueEvents.some(e => e.status === "live") ? "live" as EventStatus
+        : venueEvents.some(e => e.status === "today") ? "today" as EventStatus
+        : venueEvents.some(e => e.status === "tomorrow") ? "tomorrow" as EventStatus
+        : venueEvents.some(e => e.status === "this-week") ? "this-week" as EventStatus
+        : "upcoming" as EventStatus;
+
       const isBar = !status;
-      const matchesFilter = venueMatchesDateFilter(venue.id, events, activeDateFilter);
+      const matchesFilter = activeDateFilter === "all" || venueEvents.some(e => matchesDateFilter(e.date, activeDateFilter));
       const dimmed = activeDateFilter !== "all" && !matchesFilter;
 
-      if (isBar && !venue.hasMusic && zoom < hideBarsBelowZoom) return;
-      if (isBar && venue.hasMusic && zoom < hideBarsBelowZoom - 2) return;
-      // Hide dimmed non-event venues entirely when filtered
-      if (dimmed && isBar) return;
+      if (isBar && !venue.hasMusic && zoom < hideBarsBelowZoom) continue;
+      if (isBar && venue.hasMusic && zoom < hideBarsBelowZoom - 2) continue;
+      if (dimmed && isBar) continue;
 
       const isSelected = venue.id === selectedVenueId;
       const icon = createPinIcon(status, isSelected, zoom, venue.hasMusic, dimmed);
 
       const marker = L.marker([venue.lat, venue.lng], {
         icon,
-        _venueStatus: status, // custom property for cluster color logic
+        _venueStatus: status,
       } as any)
         .on("click", () => {
           onVenueSelect(venue.id);
           marker.openPopup();
         });
 
-      const venueEvents = events.filter((e) => e.venue.id === venue.id);
       const typeLabel = venue.type === "bar" ? "Bar" : venue.type === "brewery" ? "Brewery" : venue.type === "club" ? "Club" : "Venue";
       const musicBadge = venue.hasMusic
         ? `<span style="background:rgba(167,139,250,0.2);color:#A78BFA;padding:1px 6px;border-radius:8px;font-size:9px;margin-left:4px;">♪ Music</span>`
@@ -209,7 +228,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
       });
 
       markers.push(marker);
-    });
+    }
 
     clusterGroupRef.current.addLayers(markers);
   }, []);
