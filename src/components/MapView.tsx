@@ -328,6 +328,7 @@ const MapView = ({ venues, events, onVenueSelect, selectedVenueId, userLocation,
 
     map.on("zoomend", renderMarkers);
     map.on("moveend", () => {
+      renderMarkers();
       const center = map.getCenter();
       const last = lastSearchCenter.current;
       if (last) {
