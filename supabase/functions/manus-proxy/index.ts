@@ -7,6 +7,23 @@ const corsHeaders = {
 const MANUS_BASE =
   "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
 
+async function fetchWithRetry(url: string, retries = 3, delayMs = 1000): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok || i === retries - 1) return res;
+      // Only retry on 502/503/504
+      if (![502, 503, 504].includes(res.status)) return res;
+      console.log(`Retry ${i + 1}/${retries} after ${res.status}`);
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      console.log(`Retry ${i + 1}/${retries} after error: ${err}`);
+    }
+    await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+  }
+  throw new Error("Exhausted retries");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,13 +45,17 @@ Deno.serve(async (req) => {
     const manusUrl = `${MANUS_BASE}/${endpoint}?limit=${limit}&offset=${offset}`;
     console.log(`Proxying to: ${manusUrl}`);
 
-    const res = await fetch(manusUrl);
+    const res = await fetchWithRetry(manusUrl, 3, 2000);
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`Manus API error: ${res.status} - ${body}`);
+      const isHtml = body.trim().startsWith("<!") || body.trim().startsWith("<html");
+      const errorMsg = isHtml
+        ? `Manus API unavailable (status ${res.status})`
+        : `Manus API error [${res.status}]: ${body.slice(0, 200)}`;
+      console.error(errorMsg);
       return new Response(
-        JSON.stringify({ error: `Manus API error [${res.status}]: ${body}` }),
+        JSON.stringify({ error: errorMsg, apiDown: true }),
         { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -48,8 +69,8 @@ Deno.serve(async (req) => {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error(`Proxy error: ${msg}`);
     return new Response(
-      JSON.stringify({ error: msg }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: msg, apiDown: true }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
