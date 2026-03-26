@@ -9,8 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
    ──────────────────────────────────────────────────────── */
 
 const PAGE_SIZE = 200;
-const MAX_VENUES = 1000; // hard cap — 5 pages max
-const MAX_PAGES = Math.ceil(MAX_VENUES / PAGE_SIZE);
+const MAX_ITEMS = 1000; // hard cap — 5 pages max
+const MAX_PAGES = Math.ceil(MAX_ITEMS / PAGE_SIZE);
 
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
