@@ -1,6 +1,7 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { isToday, isTomorrow, differenceInDays, format, parseISO } from "date-fns";
 import { formatLabel, formatTime } from "@/lib/formatters";
+import { supabase } from "@/integrations/supabase/client";
 
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
