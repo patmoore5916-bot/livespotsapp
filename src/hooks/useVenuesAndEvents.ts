@@ -226,67 +226,111 @@ export const useEvents = () => {
     queryKey: ["events", "manus-v3"],
     enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
-      const raw = await fetchAllPages("events");
+      try {
+        const raw = await fetchAllPages("events");
 
-      // First pass: build all events
-      const rawEvents: Event[] = [];
-      for (const e of raw) {
-        if (!e.eventDate) continue;
+        // First pass: build all events
+        const rawEvents: Event[] = [];
+        for (const e of raw) {
+          if (!e.eventDate) continue;
 
-        const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-        const nameKey = e.venueName?.toLowerCase().trim() ?? "";
-        const venueByName = !venueFromCache && nameKey ? venueNameIndex.get(nameKey) : undefined;
-        let venueBySubstring: Venue | undefined;
-        if (!venueFromCache && !venueByName && nameKey.length > 3) {
-          const match = venueNamesList.find(
-            (v) => v.key.includes(nameKey) || nameKey.includes(v.key)
-          );
-          venueBySubstring = match?.venue;
+          const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
+          const nameKey = e.venueName?.toLowerCase().trim() ?? "";
+          const venueByName = !venueFromCache && nameKey ? venueNameIndex.get(nameKey) : undefined;
+          let venueBySubstring: Venue | undefined;
+          if (!venueFromCache && !venueByName && nameKey.length > 3) {
+            const match = venueNamesList.find(
+              (v) => v.key.includes(nameKey) || nameKey.includes(v.key)
+            );
+            venueBySubstring = match?.venue;
+          }
+          const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
+
+          const eventLat = parseFloat(e.lat ?? e.venue?.lat) || 0;
+          const eventLng = parseFloat(e.lng ?? e.venue?.lng) || 0;
+
+          const baseVenue: Venue = matchedVenue ?? {
+            id: String(e.venueId ?? e.id),
+            name: e.venueName ?? "Unknown Venue",
+            type: "venue",
+            neighborhood: "",
+            city: "",
+            lat: eventLat,
+            lng: eventLng,
+            hasMusic: false,
+            musicScore: 0,
+          };
+
+          const venue: Venue = {
+            ...baseVenue,
+            city: baseVenue.city || e.city || "",
+          };
+
+          const { status, label } = deriveStatus(e.eventDate);
+          const rawGenre = e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other");
+
+          rawEvents.push({
+            id: String(e.id),
+            venue,
+            artist: e.bandName ?? "TBA",
+            genre: formatLabel(rawGenre),
+            date: e.eventDate,
+            doorsAt: e.doorsAt ? formatTime(e.doorsAt.slice(0, 5)) : "",
+            startTime: e.startTime ? formatTime(e.startTime.slice(0, 5)) : "",
+            status,
+            statusLabel: label,
+            ticketUrl: e.ticketUrl ?? undefined,
+          });
         }
-        const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
 
-        const eventLat = parseFloat(e.lat ?? e.venue?.lat) || 0;
-        const eventLng = parseFloat(e.lng ?? e.venue?.lng) || 0;
-
-        const baseVenue: Venue = matchedVenue ?? {
-          id: String(e.venueId ?? e.id),
-          name: e.venueName ?? "Unknown Venue",
-          type: "venue",
-          neighborhood: "",
-          city: "",
-          lat: eventLat,
-          lng: eventLng,
-          hasMusic: false,
-          musicScore: 0,
-        };
-
-        const venue: Venue = {
-          ...baseVenue,
-          city: baseVenue.city || e.city || "",
-        };
-
-        const { status, label } = deriveStatus(e.eventDate);
-        const rawGenre = e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other");
-
-        rawEvents.push({
-          id: String(e.id),
-          venue,
-          artist: e.bandName ?? "TBA",
-          genre: formatLabel(rawGenre),
-          date: e.eventDate,
-          doorsAt: e.doorsAt ? formatTime(e.doorsAt.slice(0, 5)) : "",
-          startTime: e.startTime ? formatTime(e.startTime.slice(0, 5)) : "",
-          status,
-          statusLabel: label,
-          ticketUrl: e.ticketUrl ?? undefined,
+        const deduped = deduplicateEvents(rawEvents);
+        writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, deduped);
+        return deduped;
+      } catch (err) {
+        console.warn("Manus API failed for events, falling back to database:", err);
+        const { data, error } = await supabase
+          .from("events")
+          .select("*, venues(*)");
+        if (error) throw error;
+        const events: Event[] = (data ?? []).map((e) => {
+          const v = (e as any).venues;
+          const venue: Venue = v ? {
+            id: v.id,
+            name: v.name,
+            type: v.type as VenueType,
+            neighborhood: v.neighborhood ?? "",
+            city: v.city ?? "",
+            lat: v.lat,
+            lng: v.lng,
+            hasMusic: false,
+            musicScore: 0,
+          } : {
+            id: e.venue_id,
+            name: "Unknown Venue",
+            type: "venue",
+            neighborhood: "",
+            city: "",
+            lat: 0,
+            lng: 0,
+            hasMusic: false,
+            musicScore: 0,
+          };
+          const { status, label } = deriveStatus(e.date);
+          return {
+            id: e.id,
+            venue,
+            artist: e.artist,
+            genre: formatLabel(e.genre),
+            date: e.date,
+            doorsAt: e.doors_at ? formatTime(e.doors_at.slice(0, 5)) : "",
+            startTime: e.start_time ? formatTime(e.start_time.slice(0, 5)) : "",
+            status,
+            statusLabel: label,
+            ticketUrl: e.ticket_url ?? undefined,
+          };
         });
+        return deduplicateEvents(events);
       }
-
-      // BUG 7: Deduplicate — group same artist + venue + date into one card with multiple times
-      const deduped = deduplicateEvents(rawEvents);
-
-      writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, deduped);
-      return deduped;
     },
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
