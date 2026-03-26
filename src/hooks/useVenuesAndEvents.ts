@@ -222,7 +222,7 @@ export const useEvents = () => {
     enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
       try {
-        const raw = await fetchAllEvents();
+        const raw = await fetchCapped("events");
 
         const rawEvents: Event[] = [];
         for (const e of raw) {
