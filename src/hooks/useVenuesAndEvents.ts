@@ -166,31 +166,51 @@ export const useVenues = () => {
   return useQuery({
     queryKey: ["venues", "manus-v3"],
     queryFn: async (): Promise<Venue[]> => {
-      const raw = await fetchAllPages("venues");
+      try {
+        const raw = await fetchAllPages("venues");
 
-      const venues: Venue[] = [];
-      for (const v of raw) {
-        const lat = parseFloat(v.lat);
-        const lng = parseFloat(v.lng);
-        if (!lat || !lng) continue;
+        const venues: Venue[] = [];
+        for (const v of raw) {
+          const lat = parseFloat(v.lat);
+          const lng = parseFloat(v.lng);
+          if (!lat || !lng) continue;
 
-        const hasMusicType = isMusical(v.venueType ?? "", v.vibeTags ?? []);
-        venues.push({
-          id: String(v.id),
+          const hasMusicType = isMusical(v.venueType ?? "", v.vibeTags ?? []);
+          venues.push({
+            id: String(v.id),
+            name: v.name,
+            type: mapVenueType(v.venueType ?? ""),
+            neighborhood: v.zip ?? "",
+            city: v.city ?? "",
+            lat,
+            lng,
+            hasMusic: hasMusicType,
+            musicScore: hasMusicType ? 0.7 : 0,
+          });
+        }
+
+        hydrateVenueIndex(venues);
+        writeCache(LS_VENUES_KEY, LS_VENUES_TS, venues);
+        return venues;
+      } catch (err) {
+        console.warn("Manus API failed, falling back to database:", err);
+        // Fallback: read from Supabase venues table
+        const { data, error } = await supabase.from("venues").select("*");
+        if (error) throw error;
+        const venues: Venue[] = (data ?? []).map((v) => ({
+          id: v.id,
           name: v.name,
-          type: mapVenueType(v.venueType ?? ""),
-          neighborhood: v.zip ?? "",
+          type: v.type as VenueType,
+          neighborhood: v.neighborhood ?? "",
           city: v.city ?? "",
-          lat,
-          lng,
-          hasMusic: hasMusicType,
-          musicScore: hasMusicType ? 0.7 : 0,
-        });
+          lat: v.lat,
+          lng: v.lng,
+          hasMusic: false,
+          musicScore: 0,
+        }));
+        hydrateVenueIndex(venues);
+        return venues;
       }
-
-      hydrateVenueIndex(venues);
-      writeCache(LS_VENUES_KEY, LS_VENUES_TS, venues);
-      return venues;
     },
     placeholderData: cachedVenues ?? keepPreviousData,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
