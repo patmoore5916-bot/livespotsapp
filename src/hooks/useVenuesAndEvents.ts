@@ -32,40 +32,22 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
   return res.json();
 };
 
-/** Fetch up to MAX_VENUES venues. Returns all at once (no streaming). */
-const fetchVenuesCapped = async (): Promise<any[]> => {
+/** Fetch up to MAX_ITEMS for a given endpoint (venues or events). */
+const fetchCapped = async (endpoint: "venues" | "events"): Promise<any[]> => {
   const all: any[] = [];
   let offset = 0;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const json = await fetchManusPage("venues", PAGE_SIZE, offset);
+    const json = await fetchManusPage(endpoint, PAGE_SIZE, offset);
     const items = json.data ?? [];
     all.push(...items);
 
     const total = json.meta?.total ?? 0;
     offset += PAGE_SIZE;
-    if (all.length >= MAX_VENUES || offset >= total || items.length < PAGE_SIZE) break;
+    if (all.length >= MAX_ITEMS || offset >= total || items.length < PAGE_SIZE) break;
   }
 
-  return all.slice(0, MAX_VENUES);
-};
-
-/** Fetch ALL events (events are smaller dataset, no cap needed). */
-const fetchAllEvents = async (): Promise<any[]> => {
-  const all: any[] = [];
-  let offset = 0;
-
-  while (true) {
-    const json = await fetchManusPage("events", PAGE_SIZE, offset);
-    const items = json.data ?? [];
-    all.push(...items);
-
-    const total = json.meta?.total ?? 0;
-    offset += PAGE_SIZE;
-    if (offset >= total || items.length < PAGE_SIZE) break;
-  }
-
-  return all;
+  return all.slice(0, MAX_ITEMS);
 };
 
 /* ────────────────────────────────────────────────────────
