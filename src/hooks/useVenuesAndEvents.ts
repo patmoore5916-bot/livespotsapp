@@ -161,7 +161,7 @@ export const useVenues = () => {
     queryKey: ["venues", "manus-v3"],
     queryFn: async (): Promise<Venue[]> => {
       try {
-        const raw = await fetchVenuesCapped();
+        const raw = await fetchCapped("venues");
 
         const venues: Venue[] = [];
         for (const v of raw) {
