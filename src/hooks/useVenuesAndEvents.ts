@@ -1,7 +1,16 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { isToday, isTomorrow, differenceInDays, format, parseISO } from "date-fns";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { isToday, isTomorrow, differenceInDays, format } from "date-fns";
 import { formatLabel, formatTime } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
+
+/* ────────────────────────────────────────────────────────
+   API helpers
+   ──────────────────────────────────────────────────────── */
+
+const PAGE_SIZE = 200;
+const MAX_VENUES = 1000; // hard cap — 5 pages max
+const MAX_PAGES = Math.ceil(MAX_VENUES / PAGE_SIZE);
 
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -23,23 +32,45 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
   return res.json();
 };
 
-const fetchAllPages = async (endpoint: "venues" | "events"): Promise<any[]> => {
+/** Fetch up to MAX_VENUES venues. Returns all at once (no streaming). */
+const fetchVenuesCapped = async (): Promise<any[]> => {
   const all: any[] = [];
   let offset = 0;
-  const limit = 200;
 
-  while (true) {
-    const json = await fetchManusPage(endpoint, limit, offset);
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const json = await fetchManusPage("venues", PAGE_SIZE, offset);
     const items = json.data ?? [];
     all.push(...items);
 
     const total = json.meta?.total ?? 0;
-    offset += limit;
-    if (offset >= total || items.length < limit) break;
+    offset += PAGE_SIZE;
+    if (all.length >= MAX_VENUES || offset >= total || items.length < PAGE_SIZE) break;
+  }
+
+  return all.slice(0, MAX_VENUES);
+};
+
+/** Fetch ALL events (events are smaller dataset, no cap needed). */
+const fetchAllEvents = async (): Promise<any[]> => {
+  const all: any[] = [];
+  let offset = 0;
+
+  while (true) {
+    const json = await fetchManusPage("events", PAGE_SIZE, offset);
+    const items = json.data ?? [];
+    all.push(...items);
+
+    const total = json.meta?.total ?? 0;
+    offset += PAGE_SIZE;
+    if (offset >= total || items.length < PAGE_SIZE) break;
   }
 
   return all;
 };
+
+/* ────────────────────────────────────────────────────────
+   Types
+   ──────────────────────────────────────────────────────── */
 
 export type VenueType = "venue" | "bar" | "brewery" | "club";
 export type EventStatus = "live" | "today" | "tomorrow" | "this-week" | "upcoming";
@@ -64,10 +95,8 @@ export interface Event {
   date: string;
   doorsAt: string;
   startTime: string;
-  /** Multiple show times when duplicates are grouped */
   showTimes?: string[];
   status: EventStatus;
-  /** Human-readable status label */
   statusLabel: string;
   ticketUrl?: string;
 }
@@ -80,6 +109,10 @@ export const statusColors = {
   upcoming: { bg: "#64748B", glow: "rgba(100,116,139,0.25)", label: "Upcoming" },
 } as const;
 
+/* ────────────────────────────────────────────────────────
+   Helpers
+   ──────────────────────────────────────────────────────── */
+
 function deriveStatus(dateStr: string): { status: EventStatus; label: string } {
   const d = new Date(`${dateStr}T00:00:00`);
   const now = new Date();
@@ -91,7 +124,6 @@ function deriveStatus(dateStr: string): { status: EventStatus; label: string } {
   const days = differenceInDays(d, now);
   if (days >= 0 && days <= 7) return { status: "this-week", label: "This Week" };
 
-  // Far future — show actual date
   return { status: "upcoming", label: format(d, "MMM d") };
 }
 
@@ -116,34 +148,13 @@ function isMusical(venueType: string, vibeTags: string[]): boolean {
   return MUSIC_VENUE_TYPES.has(venueType) || vibeTags.includes("live_music");
 }
 
+/* ────────────────────────────────────────────────────────
+   Venue index (for event → venue matching)
+   ──────────────────────────────────────────────────────── */
+
 let venueCache = new Map<string, Venue>();
 let venueNameIndex = new Map<string, Venue>();
 let venueNamesList: { key: string; venue: Venue }[] = [];
-
-const LS_VENUES_KEY = "livespots_venues_v1";
-const LS_EVENTS_KEY = "livespots_events_v1";
-const LS_VENUES_TS = "livespots_venues_ts";
-const LS_EVENTS_TS = "livespots_events_ts";
-const VENUE_CACHE_TTL = 1000 * 60 * 60 * 24 * 7;
-const EVENT_CACHE_TTL = 1000 * 60 * 60 * 2;
-
-function readCache<T>(key: string, tsKey: string, ttl: number): T | undefined {
-  try {
-    const ts = localStorage.getItem(tsKey);
-    if (!ts || Date.now() - Number(ts) > ttl) return undefined;
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function writeCache(key: string, tsKey: string, data: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-    localStorage.setItem(tsKey, String(Date.now()));
-  } catch { /* storage full */ }
-}
 
 function hydrateVenueIndex(venues: Venue[]) {
   venueCache = new Map();
@@ -159,15 +170,16 @@ function hydrateVenueIndex(venues: Venue[]) {
   }
 }
 
-const cachedVenues = readCache<Venue[]>(LS_VENUES_KEY, LS_VENUES_TS, VENUE_CACHE_TTL);
-if (cachedVenues) hydrateVenueIndex(cachedVenues);
+/* ────────────────────────────────────────────────────────
+   useVenues — capped at 1,000, cached 24h via react-query persist
+   ──────────────────────────────────────────────────────── */
 
 export const useVenues = () => {
   return useQuery({
     queryKey: ["venues", "manus-v3"],
     queryFn: async (): Promise<Venue[]> => {
       try {
-        const raw = await fetchAllPages("venues");
+        const raw = await fetchVenuesCapped();
 
         const venues: Venue[] = [];
         for (const v of raw) {
@@ -190,11 +202,9 @@ export const useVenues = () => {
         }
 
         hydrateVenueIndex(venues);
-        writeCache(LS_VENUES_KEY, LS_VENUES_TS, venues);
         return venues;
       } catch (err) {
         console.warn("Manus API failed, falling back to database:", err);
-        // Fallback: read from Supabase venues table
         const { data, error } = await supabase.from("venues").select("*");
         if (error) throw error;
         const venues: Venue[] = (data ?? []).map((v) => ({
@@ -212,12 +222,15 @@ export const useVenues = () => {
         return venues;
       }
     },
-    placeholderData: cachedVenues ?? keepPreviousData,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
     gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
     retry: 2,
   });
 };
+
+/* ────────────────────────────────────────────────────────
+   useEvents
+   ──────────────────────────────────────────────────────── */
 
 export const useEvents = () => {
   const { data: venuesData } = useVenues();
@@ -227,9 +240,8 @@ export const useEvents = () => {
     enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
       try {
-        const raw = await fetchAllPages("events");
+        const raw = await fetchAllEvents();
 
-        // First pass: build all events
         const rawEvents: Event[] = [];
         for (const e of raw) {
           if (!e.eventDate) continue;
@@ -283,9 +295,7 @@ export const useEvents = () => {
           });
         }
 
-        const deduped = deduplicateEvents(rawEvents);
-        writeCache(LS_EVENTS_KEY, LS_EVENTS_TS, deduped);
-        return deduped;
+        return deduplicateEvents(rawEvents);
       } catch (err) {
         console.warn("Manus API failed for events, falling back to database:", err);
         const { data, error } = await supabase
@@ -334,12 +344,14 @@ export const useEvents = () => {
     },
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-    placeholderData: readCache<Event[]>(LS_EVENTS_KEY, LS_EVENTS_TS, EVENT_CACHE_TTL) ?? keepPreviousData,
     retry: 2,
   });
 };
 
-/** Group duplicate events (same artist + venue + date) into single cards with multiple show times */
+/* ────────────────────────────────────────────────────────
+   Deduplication
+   ──────────────────────────────────────────────────────── */
+
 function deduplicateEvents(events: Event[]): Event[] {
   const groups = new Map<string, Event[]>();
 
@@ -354,7 +366,6 @@ function deduplicateEvents(events: Event[]): Event[] {
     if (group.length === 1) {
       result.push(group[0]);
     } else {
-      // Merge: keep first event, collect all unique times
       const primary = { ...group[0] };
       const times = [...new Set(group.map((e) => e.startTime).filter(Boolean))];
       primary.showTimes = times.length > 1 ? times : undefined;
