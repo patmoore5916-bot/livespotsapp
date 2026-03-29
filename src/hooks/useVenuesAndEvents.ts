@@ -278,6 +278,7 @@ export const useEvents = () => {
           });
         }
 
+        console.log(`[LiveSpots] Loaded ${rawEvents.length} events from raw, venueCache size: ${venueCache.size}`);
         return deduplicateEvents(rawEvents);
       } catch (err) {
         console.warn("Manus API failed for events, falling back to database:", err);
