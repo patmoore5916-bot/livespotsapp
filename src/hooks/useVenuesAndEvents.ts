@@ -184,7 +184,7 @@ export const useVenues = () => {
         }
 
         hydrateVenueIndex(venues);
-        console.log(`[LiveSpots] Loaded ${venues.length} venues from ${raw.length} raw items`);
+        
         return venues;
       } catch (err) {
         console.warn("Manus API failed, falling back to database:", err);
@@ -278,7 +278,7 @@ export const useEvents = () => {
           });
         }
 
-        console.log(`[LiveSpots] Loaded ${rawEvents.length} events from raw, venueCache size: ${venueCache.size}`);
+        
         return deduplicateEvents(rawEvents);
       } catch (err) {
         console.warn("Manus API failed for events, falling back to database:", err);
