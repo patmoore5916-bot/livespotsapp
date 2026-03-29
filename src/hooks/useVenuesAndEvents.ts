@@ -158,7 +158,7 @@ function hydrateVenueIndex(venues: Venue[]) {
 
 export const useVenues = () => {
   return useQuery({
-    queryKey: ["venues", "manus-v3"],
+    queryKey: ["venues", "manus-v4"],
     queryFn: async (): Promise<Venue[]> => {
       try {
         const raw = await fetchCapped("venues");
@@ -219,7 +219,7 @@ export const useEvents = () => {
   const { data: venuesData } = useVenues();
 
   return useQuery({
-    queryKey: ["events", "manus-v3"],
+    queryKey: ["events", "manus-v4"],
     enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
     queryFn: async (): Promise<Event[]> => {
       try {
