@@ -184,6 +184,7 @@ export const useVenues = () => {
         }
 
         hydrateVenueIndex(venues);
+        console.log(`[LiveSpots] Loaded ${venues.length} venues from ${raw.length} raw items`);
         return venues;
       } catch (err) {
         console.warn("Manus API failed, falling back to database:", err);
