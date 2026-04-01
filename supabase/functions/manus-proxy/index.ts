@@ -4,7 +4,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MANUS_BASE = "https://livespots.app/api/v1";
+const MANUS_BASE =
+  "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
 
 async function fetchWithRetry(url: string, retries = 3, delayMs = 1000): Promise<Response> {
   for (let i = 0; i < retries; i++) {
