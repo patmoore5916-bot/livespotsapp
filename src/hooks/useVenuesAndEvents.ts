@@ -12,6 +12,23 @@ const PAGE_SIZE = 200;
 const MAX_ITEMS = 1000; // hard cap — 5 pages max
 const MAX_PAGES = Math.ceil(MAX_ITEMS / PAGE_SIZE);
 
+type ManusPageResponse = {
+  data?: any[];
+  meta?: {
+    total?: number;
+    limit?: number;
+    offset?: number;
+    returned?: number;
+  };
+  apiDown?: boolean;
+  error?: string;
+  upstreamStatus?: number | null;
+};
+
+const isApiDownPayload = (value: unknown): value is ManusPageResponse & { apiDown: true } => {
+  return typeof value === "object" && value !== null && (value as { apiDown?: boolean }).apiDown === true;
+};
+
 const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -24,12 +41,33 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
     },
   });
 
+  const text = await res.text();
+  let payload: unknown = null;
+
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+  }
+
   if (!res.ok) {
-    const text = await res.text();
+    if (isApiDownPayload(payload)) {
+      throw new Error(payload.error ?? "Manus API unavailable");
+    }
     throw new Error(`Proxy error ${res.status}: ${text}`);
   }
 
-  return res.json();
+  if (isApiDownPayload(payload)) {
+    throw new Error(payload.error ?? "Manus API unavailable");
+  }
+
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Proxy returned an invalid response");
+  }
+
+  return payload as ManusPageResponse;
 };
 
 /** Fetch up to MAX_ITEMS for a given endpoint (venues or events). */

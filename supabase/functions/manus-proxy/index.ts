@@ -4,8 +4,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MANUS_BASE =
-  "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
+const MANUS_BASE = "https://livespots.app/api/v1";
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function apiDownResponse(error: string, limit: number, offset: number, upstreamStatus?: number) {
+  return jsonResponse({
+    data: [],
+    meta: {
+      total: 0,
+      limit,
+      offset,
+      returned: 0,
+    },
+    error,
+    apiDown: true,
+    upstreamStatus: upstreamStatus ?? null,
+  });
+}
 
 async function fetchWithRetry(url: string, retries = 3, delayMs = 1000): Promise<Response> {
   for (let i = 0; i < retries; i++) {
@@ -29,18 +50,23 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let limit = 200;
+  let offset = 0;
+
   try {
     const url = new URL(req.url);
     const endpoint = url.searchParams.get("endpoint");
     if (!endpoint || !["venues", "events"].includes(endpoint)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid endpoint. Use ?endpoint=venues or ?endpoint=events" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      return jsonResponse(
+        { error: "Invalid endpoint. Use ?endpoint=venues or ?endpoint=events" },
+        400,
       );
     }
 
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "200"), 200);
-    const offset = url.searchParams.get("offset") || "0";
+    const rawLimit = Number.parseInt(url.searchParams.get("limit") || "200", 10);
+    const rawOffset = Number.parseInt(url.searchParams.get("offset") || "0", 10);
+    limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 200;
+    offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
     const manusUrl = `${MANUS_BASE}/${endpoint}?limit=${limit}&offset=${offset}`;
     console.log(`Proxying to: ${manusUrl}`);
@@ -54,23 +80,14 @@ Deno.serve(async (req) => {
         ? `Manus API unavailable (status ${res.status})`
         : `Manus API error [${res.status}]: ${body.slice(0, 200)}`;
       console.error(errorMsg);
-      return new Response(
-        JSON.stringify({ error: errorMsg, apiDown: true }),
-        { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiDownResponse(errorMsg, limit, offset, res.status);
     }
 
     const data = await res.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse(data);
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error(`Proxy error: ${msg}`);
-    return new Response(
-      JSON.stringify({ error: msg, apiDown: true }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiDownResponse(`Manus API unavailable: ${msg}`, limit, offset, 502);
   }
 });
