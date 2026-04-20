@@ -1,38 +1,39 @@
-import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow, differenceInDays, format } from "date-fns";
 import { formatLabel, formatTime } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserLocation } from "@/hooks/useUserLocation";
 
 /* ────────────────────────────────────────────────────────
-   API helpers
+   Unified Feed API (venues + events in one call, sorted by distance)
    ──────────────────────────────────────────────────────── */
 
-const PAGE_SIZE = 200;
-const MAX_ITEMS = 1000; // hard cap — 5 pages max
-const MAX_PAGES = Math.ceil(MAX_ITEMS / PAGE_SIZE);
-
-type ManusPageResponse = {
-  data?: any[];
-  meta?: {
-    total?: number;
-    limit?: number;
-    offset?: number;
-    returned?: number;
-  };
+type FeedResponse = {
+  events?: any[];
+  meta?: Record<string, unknown>;
   apiDown?: boolean;
   error?: string;
   upstreamStatus?: number | null;
 };
 
-const isApiDownPayload = (value: unknown): value is ManusPageResponse & { apiDown: true } => {
+const isApiDownPayload = (value: unknown): value is FeedResponse & { apiDown: true } => {
   return typeof value === "object" && value !== null && (value as { apiDown?: boolean }).apiDown === true;
 };
 
-const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
+const fetchFeed = async (params: { lat?: number; lng?: number; radius?: number; state?: string }): Promise<FeedResponse> => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `${supabaseUrl}/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+
+  const qs = new URLSearchParams({ endpoint: "feed" });
+  if (params.lat != null && params.lng != null) {
+    qs.set("lat", String(params.lat));
+    qs.set("lng", String(params.lng));
+    qs.set("radius", String(params.radius ?? 25));
+  } else {
+    qs.set("state", params.state ?? "NC");
+  }
+
+  const url = `${supabaseUrl}/functions/v1/manus-proxy?${qs.toString()}`;
 
   const res = await fetch(url, {
     headers: {
@@ -43,13 +44,8 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
 
   const text = await res.text();
   let payload: unknown = null;
-
   if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
-    }
+    try { payload = JSON.parse(text); } catch { payload = null; }
   }
 
   if (!res.ok) {
@@ -58,34 +54,14 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
     }
     throw new Error(`Proxy error ${res.status}: ${text}`);
   }
-
   if (isApiDownPayload(payload)) {
     throw new Error(payload.error ?? "Manus API unavailable");
   }
-
   if (!payload || typeof payload !== "object") {
     throw new Error("Proxy returned an invalid response");
   }
 
-  return payload as ManusPageResponse;
-};
-
-/** Fetch up to MAX_ITEMS for a given endpoint (venues or events). */
-const fetchCapped = async (endpoint: "venues" | "events"): Promise<any[]> => {
-  const all: any[] = [];
-  let offset = 0;
-
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const json = await fetchManusPage(endpoint, PAGE_SIZE, offset);
-    const items = json.data ?? [];
-    all.push(...items);
-
-    const total = json.meta?.total ?? 0;
-    offset += PAGE_SIZE;
-    if (all.length >= MAX_ITEMS || offset >= total || items.length < PAGE_SIZE) break;
-  }
-
-  return all.slice(0, MAX_ITEMS);
+  return payload as FeedResponse;
 };
 
 /* ────────────────────────────────────────────────────────
