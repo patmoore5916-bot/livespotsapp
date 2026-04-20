@@ -285,12 +285,12 @@ const useFeed = () => {
 
 export const useVenues = () => {
   const q = useFeed();
-  return { ...q, data: q.data?.venues ?? [] } as ReturnType<typeof useQuery<Venue[]>>;
+  return { ...q, data: q.data?.venues ?? [] };
 };
 
 export const useEvents = () => {
   const q = useFeed();
-  return { ...q, data: q.data?.events ?? [] } as ReturnType<typeof useQuery<Event[]>>;
+  return { ...q, data: q.data?.events ?? [] };
 };
 
 /* ────────────────────────────────────────────────────────
