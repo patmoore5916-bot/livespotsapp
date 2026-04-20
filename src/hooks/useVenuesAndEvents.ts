@@ -1,38 +1,39 @@
-import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { isToday, isTomorrow, differenceInDays, format } from "date-fns";
 import { formatLabel, formatTime } from "@/lib/formatters";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserLocation } from "@/hooks/useUserLocation";
 
 /* ────────────────────────────────────────────────────────
-   API helpers
+   Unified Feed API (venues + events in one call, sorted by distance)
    ──────────────────────────────────────────────────────── */
 
-const PAGE_SIZE = 200;
-const MAX_ITEMS = 1000; // hard cap — 5 pages max
-const MAX_PAGES = Math.ceil(MAX_ITEMS / PAGE_SIZE);
-
-type ManusPageResponse = {
-  data?: any[];
-  meta?: {
-    total?: number;
-    limit?: number;
-    offset?: number;
-    returned?: number;
-  };
+type FeedResponse = {
+  events?: any[];
+  meta?: Record<string, unknown>;
   apiDown?: boolean;
   error?: string;
   upstreamStatus?: number | null;
 };
 
-const isApiDownPayload = (value: unknown): value is ManusPageResponse & { apiDown: true } => {
+const isApiDownPayload = (value: unknown): value is FeedResponse & { apiDown: true } => {
   return typeof value === "object" && value !== null && (value as { apiDown?: boolean }).apiDown === true;
 };
 
-const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offset: number) => {
+const fetchFeed = async (params: { lat?: number; lng?: number; radius?: number; state?: string }): Promise<FeedResponse> => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `${supabaseUrl}/functions/v1/manus-proxy?endpoint=${endpoint}&limit=${limit}&offset=${offset}`;
+
+  const qs = new URLSearchParams({ endpoint: "feed" });
+  if (params.lat != null && params.lng != null) {
+    qs.set("lat", String(params.lat));
+    qs.set("lng", String(params.lng));
+    qs.set("radius", String(params.radius ?? 25));
+  } else {
+    qs.set("state", params.state ?? "NC");
+  }
+
+  const url = `${supabaseUrl}/functions/v1/manus-proxy?${qs.toString()}`;
 
   const res = await fetch(url, {
     headers: {
@@ -43,13 +44,8 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
 
   const text = await res.text();
   let payload: unknown = null;
-
   if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
-    }
+    try { payload = JSON.parse(text); } catch { payload = null; }
   }
 
   if (!res.ok) {
@@ -58,34 +54,14 @@ const fetchManusPage = async (endpoint: "venues" | "events", limit: number, offs
     }
     throw new Error(`Proxy error ${res.status}: ${text}`);
   }
-
   if (isApiDownPayload(payload)) {
     throw new Error(payload.error ?? "Manus API unavailable");
   }
-
   if (!payload || typeof payload !== "object") {
     throw new Error("Proxy returned an invalid response");
   }
 
-  return payload as ManusPageResponse;
-};
-
-/** Fetch up to MAX_ITEMS for a given endpoint (venues or events). */
-const fetchCapped = async (endpoint: "venues" | "events"): Promise<any[]> => {
-  const all: any[] = [];
-  let offset = 0;
-
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const json = await fetchManusPage(endpoint, PAGE_SIZE, offset);
-    const items = json.data ?? [];
-    all.push(...items);
-
-    const total = json.meta?.total ?? 0;
-    offset += PAGE_SIZE;
-    if (all.length >= MAX_ITEMS || offset >= total || items.length < PAGE_SIZE) break;
-  }
-
-  return all.slice(0, MAX_ITEMS);
+  return payload as FeedResponse;
 };
 
 /* ────────────────────────────────────────────────────────
@@ -191,44 +167,84 @@ function hydrateVenueIndex(venues: Venue[]) {
 }
 
 /* ────────────────────────────────────────────────────────
-   useVenues — capped at 1,000, cached 24h via react-query persist
+   Unified feed query — single fetch returns venues + events
    ──────────────────────────────────────────────────────── */
 
-export const useVenues = () => {
-  return useQuery({
-    queryKey: ["venues", "manus-v4"],
-    queryFn: async (): Promise<Venue[]> => {
+interface FeedResult {
+  venues: Venue[];
+  events: Event[];
+}
+
+/** Single shared query — fetches the unified feed (venues + events) in one call. */
+const useFeed = () => {
+  const { location } = useUserLocation();
+
+  return useQuery<FeedResult>({
+    queryKey: ["feed", "manus-v5", location?.lat ?? null, location?.lng ?? null],
+    queryFn: async (): Promise<FeedResult> => {
       try {
-        const raw = await fetchCapped("venues");
+        const json = await fetchFeed(
+          location ? { lat: location.lat, lng: location.lng, radius: 25 } : { state: "NC" }
+        );
 
-        const venues: Venue[] = [];
-        for (const v of raw) {
-          const lat = parseFloat(v.lat);
-          const lng = parseFloat(v.lng);
-          if (!lat || !lng) continue;
+        const rawEvents = json.events ?? [];
+        const venuesById = new Map<string, Venue>();
+        const events: Event[] = [];
 
-          const hasMusicType = isMusical(v.venueType ?? "", v.vibeTags ?? []);
-          venues.push({
-            id: String(v.id),
-            name: v.name,
-            type: mapVenueType(v.venueType ?? ""),
-            neighborhood: v.zip ?? "",
-            city: v.city ?? "",
+        for (const e of rawEvents) {
+          if (!e.eventDate) continue;
+          const v = e.venue ?? {};
+          const lat = parseFloat(v.lat ?? e.lat) || 0;
+          const lng = parseFloat(v.lng ?? e.lng) || 0;
+
+          const venueId = String(v.id ?? e.venueId ?? e.id);
+          const venueType = v.venueType ?? "";
+          const vibeTags: string[] = v.vibeTags ?? [];
+          const hasMusicType = isMusical(venueType, vibeTags);
+
+          const venue: Venue = {
+            id: venueId,
+            name: v.name ?? e.venueName ?? "Unknown Venue",
+            type: mapVenueType(venueType),
+            neighborhood: v.address ?? "",
+            city: v.city ?? e.city ?? "",
             lat,
             lng,
-            hasMusic: hasMusicType,
-            musicScore: hasMusicType ? 0.7 : 0,
+            hasMusic: hasMusicType || true, // events imply live music
+            musicScore: hasMusicType ? 0.9 : 0.5,
+          };
+
+          if (lat && lng && !venuesById.has(venueId)) {
+            venuesById.set(venueId, venue);
+          }
+
+          const { status, label } = deriveStatus(e.eventDate);
+          const rawGenre = e.genre ?? (e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other"));
+
+          events.push({
+            id: String(e.id),
+            venue,
+            artist: e.bandName ?? "TBA",
+            genre: formatLabel(rawGenre),
+            date: e.eventDate,
+            doorsAt: e.doorsAt ? formatTime(String(e.doorsAt).slice(0, 5)) : "",
+            startTime: e.startTime ?? "",
+            status,
+            statusLabel: label,
+            ticketUrl: e.ticketUrl ?? undefined,
           });
         }
 
+        const venues = Array.from(venuesById.values());
         hydrateVenueIndex(venues);
-        
-        return venues;
+        return { venues, events: deduplicateEvents(events) };
       } catch (err) {
-        console.warn("Manus API failed, falling back to database:", err);
-        const { data, error } = await supabase.from("venues").select("*");
-        if (error) throw error;
-        const venues: Venue[] = (data ?? []).map((v) => ({
+        console.warn("Feed API failed, falling back to database:", err);
+        const [{ data: vData }, { data: eData }] = await Promise.all([
+          supabase.from("venues").select("*"),
+          supabase.from("events").select("*, venues(*)"),
+        ]);
+        const venues: Venue[] = (vData ?? []).map((v) => ({
           id: v.id,
           name: v.name,
           type: v.type as VenueType,
@@ -240,134 +256,41 @@ export const useVenues = () => {
           musicScore: 0,
         }));
         hydrateVenueIndex(venues);
-        return venues;
-      }
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-    retry: 2,
-  });
-};
-
-/* ────────────────────────────────────────────────────────
-   useEvents
-   ──────────────────────────────────────────────────────── */
-
-export const useEvents = () => {
-  const { data: venuesData } = useVenues();
-
-  return useQuery({
-    queryKey: ["events", "manus-v4"],
-    enabled: (!!venuesData && venuesData.length > 0) || venueCache.size > 0,
-    queryFn: async (): Promise<Event[]> => {
-      try {
-        const raw = await fetchCapped("events");
-
-        const rawEvents: Event[] = [];
-        for (const e of raw) {
-          if (!e.eventDate) continue;
-
-          const venueFromCache = e.venueId ? venueCache.get(String(e.venueId)) : undefined;
-          const nameKey = e.venueName?.toLowerCase().trim() ?? "";
-          const venueByName = !venueFromCache && nameKey ? venueNameIndex.get(nameKey) : undefined;
-          let venueBySubstring: Venue | undefined;
-          if (!venueFromCache && !venueByName && nameKey.length > 3) {
-            const match = venueNamesList.find(
-              (v) => v.key.includes(nameKey) || nameKey.includes(v.key)
-            );
-            venueBySubstring = match?.venue;
-          }
-          const matchedVenue = venueFromCache ?? venueByName ?? venueBySubstring;
-
-          const eventLat = parseFloat(e.lat ?? e.venue?.lat) || 0;
-          const eventLng = parseFloat(e.lng ?? e.venue?.lng) || 0;
-
-          const baseVenue: Venue = matchedVenue ?? {
-            id: String(e.venueId ?? e.id),
-            name: e.venueName ?? "Unknown Venue",
-            type: "venue",
-            neighborhood: "",
-            city: "",
-            lat: eventLat,
-            lng: eventLng,
-            hasMusic: false,
-            musicScore: 0,
-          };
-
-          const venue: Venue = {
-            ...baseVenue,
-            city: baseVenue.city || e.city || "",
-          };
-
-          const { status, label } = deriveStatus(e.eventDate);
-          const rawGenre = e.eventCategory === "live_music" ? "Live Music" : (e.eventCategory ?? "Other");
-
-          rawEvents.push({
-            id: String(e.id),
-            venue,
-            artist: e.bandName ?? "TBA",
-            genre: formatLabel(rawGenre),
-            date: e.eventDate,
-            doorsAt: e.doorsAt ? formatTime(e.doorsAt.slice(0, 5)) : "",
-            startTime: e.startTime ? formatTime(e.startTime.slice(0, 5)) : "",
-            status,
-            statusLabel: label,
-            ticketUrl: e.ticketUrl ?? undefined,
-          });
-        }
-
-        
-        return deduplicateEvents(rawEvents);
-      } catch (err) {
-        console.warn("Manus API failed for events, falling back to database:", err);
-        const { data, error } = await supabase
-          .from("events")
-          .select("*, venues(*)");
-        if (error) throw error;
-        const events: Event[] = (data ?? []).map((e) => {
+        const events: Event[] = (eData ?? []).map((e) => {
           const v = (e as any).venues;
           const venue: Venue = v ? {
-            id: v.id,
-            name: v.name,
-            type: v.type as VenueType,
-            neighborhood: v.neighborhood ?? "",
-            city: v.city ?? "",
-            lat: v.lat,
-            lng: v.lng,
-            hasMusic: false,
-            musicScore: 0,
+            id: v.id, name: v.name, type: v.type as VenueType,
+            neighborhood: v.neighborhood ?? "", city: v.city ?? "",
+            lat: v.lat, lng: v.lng, hasMusic: false, musicScore: 0,
           } : {
-            id: e.venue_id,
-            name: "Unknown Venue",
-            type: "venue",
-            neighborhood: "",
-            city: "",
-            lat: 0,
-            lng: 0,
-            hasMusic: false,
-            musicScore: 0,
+            id: e.venue_id, name: "Unknown Venue", type: "venue",
+            neighborhood: "", city: "", lat: 0, lng: 0, hasMusic: false, musicScore: 0,
           };
           const { status, label } = deriveStatus(e.date);
           return {
-            id: e.id,
-            venue,
-            artist: e.artist,
-            genre: formatLabel(e.genre),
-            date: e.date,
+            id: e.id, venue, artist: e.artist, genre: formatLabel(e.genre), date: e.date,
             doorsAt: e.doors_at ? formatTime(e.doors_at.slice(0, 5)) : "",
             startTime: e.start_time ? formatTime(e.start_time.slice(0, 5)) : "",
-            status,
-            statusLabel: label,
-            ticketUrl: e.ticket_url ?? undefined,
+            status, statusLabel: label, ticketUrl: e.ticket_url ?? undefined,
           };
         });
-        return deduplicateEvents(events);
+        return { venues, events: deduplicateEvents(events) };
       }
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
-    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes — feed is location-sensitive
+    gcTime: 1000 * 60 * 60 * 24, // 1 day
+    retry: 1,
   });
+};
+
+export const useVenues = () => {
+  const q = useFeed();
+  return { ...q, data: q.data?.venues ?? [] };
+};
+
+export const useEvents = () => {
+  const q = useFeed();
+  return { ...q, data: q.data?.events ?? [] };
 };
 
 /* ────────────────────────────────────────────────────────
