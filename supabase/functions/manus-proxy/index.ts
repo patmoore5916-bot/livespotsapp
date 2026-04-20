@@ -56,11 +56,51 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const endpoint = url.searchParams.get("endpoint");
-    if (!endpoint || !["venues", "events"].includes(endpoint)) {
+    if (!endpoint || !["venues", "events", "feed"].includes(endpoint)) {
       return jsonResponse(
-        { error: "Invalid endpoint. Use ?endpoint=venues or ?endpoint=events" },
+        { error: "Invalid endpoint. Use ?endpoint=venues|events|feed" },
         400,
       );
+    }
+
+    // Unified feed endpoint — single fast call returning venues+events together
+    if (endpoint === "feed") {
+      const lat = url.searchParams.get("lat");
+      const lng = url.searchParams.get("lng");
+      const radius = url.searchParams.get("radius") ?? "25";
+      const state = url.searchParams.get("state");
+
+      const params = new URLSearchParams();
+      if (lat && lng) {
+        params.set("lat", lat);
+        params.set("lng", lng);
+        params.set("radius", radius);
+      } else if (state) {
+        params.set("state", state);
+      } else {
+        params.set("state", "NC");
+      }
+
+      const feedUrl = `${MANUS_BASE}/feed?${params.toString()}`;
+      console.log(`Proxying to: ${feedUrl}`);
+
+      try {
+        const res = await fetchWithRetry(feedUrl, 3, 2000);
+        if (!res.ok) {
+          const body = await res.text();
+          const isHtml = body.trim().startsWith("<!") || body.trim().startsWith("<html");
+          const errorMsg = isHtml
+            ? `Manus API unavailable (status ${res.status})`
+            : `Manus API error [${res.status}]: ${body.slice(0, 200)}`;
+          console.error(errorMsg);
+          return jsonResponse({ events: [], meta: {}, error: errorMsg, apiDown: true, upstreamStatus: res.status });
+        }
+        const data = await res.json();
+        return jsonResponse(data);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return jsonResponse({ events: [], meta: {}, error: `Manus API unavailable: ${msg}`, apiDown: true, upstreamStatus: 502 });
+      }
     }
 
     const rawLimit = Number.parseInt(url.searchParams.get("limit") || "200", 10);
