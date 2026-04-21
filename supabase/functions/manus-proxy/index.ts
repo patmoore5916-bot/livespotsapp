@@ -4,8 +4,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MANUS_BASE = "https://3000-i8bb5c6f1m8ce28uzrjdj-752a79f9.us2.manus.computer/api/v1";
-const MANUS_API_KEY = Deno.env.get("MANUS_API_KEY") ?? "ls_your_key_here";
+const MANUS_BASE = "https://livespots.app/api/v1";
+const MANUS_API_KEY = Deno.env.get("MANUS_API_KEY") ?? "";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -30,11 +30,11 @@ function apiDownResponse(error: string, limit: number, offset: number, upstreamS
 }
 
 async function fetchWithRetry(url: string, retries = 3, delayMs = 1000): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (MANUS_API_KEY) headers["X-API-Key"] = MANUS_API_KEY;
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(url, {
-        headers: { "X-API-Key": MANUS_API_KEY },
-      });
+      const res = await fetch(url, { headers });
       if (res.ok || i === retries - 1) return res;
       // Only retry on 502/503/504
       if (![502, 503, 504].includes(res.status)) return res;
