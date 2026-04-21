@@ -50,12 +50,12 @@ const fetchFeed = async (params: { lat?: number; lng?: number; radius?: number; 
 
   if (!res.ok) {
     if (isApiDownPayload(payload)) {
-      throw new Error(payload.error ?? "Manus API unavailable");
+      throw new Error(payload.error ?? "Live Spots API unavailable");
     }
     throw new Error(`Proxy error ${res.status}: ${text}`);
   }
   if (isApiDownPayload(payload)) {
-    throw new Error(payload.error ?? "Manus API unavailable");
+    throw new Error(payload.error ?? "Live Spots API unavailable");
   }
   if (!payload || typeof payload !== "object") {
     throw new Error("Proxy returned an invalid response");
