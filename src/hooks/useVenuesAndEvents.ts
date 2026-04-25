@@ -9,6 +9,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
    ──────────────────────────────────────────────────────── */
 
 type FeedResponse = {
+  data?: any[];
   events?: any[];
   meta?: Record<string, unknown>;
   apiDown?: boolean;
@@ -187,7 +188,11 @@ const useFeed = () => {
           location ? { lat: location.lat, lng: location.lng, radius: 25 } : { state: "NC" }
         );
 
-        const rawEvents = json.events ?? [];
+        const rawEvents = Array.isArray(json.events)
+          ? json.events
+          : Array.isArray(json.data)
+            ? json.data
+            : [];
         const venuesById = new Map<string, Venue>();
         const events: Event[] = [];
 
